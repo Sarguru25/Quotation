@@ -1,6 +1,6 @@
-import { fetchZohoQuotations } from "@/app/lib/zohoBooks";
-import dbConnect from "@/app/lib/dbConnect";
-import Quotation from "@/app/models/Quotation";
+import { fetchZohoQuotations } from "@/lib/zoho";
+import dbConnect from "@/lib/db";
+import Quotation from "@/models/Quotation";
 
 export async function GET() {
   try {
