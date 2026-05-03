@@ -112,26 +112,65 @@
 
 
 
+// export async function getZohoAccessToken() {
+//   const res = await fetch("https://accounts.zoho.in/oauth/v2/token", {
+//     method: "POST",
+//     headers: {
+//       "Content-Type": "application/x-www-form-urlencoded",
+//     },
+//     body: new URLSearchParams({
+//       refresh_token: process.env.ZOHO_REFRESH_TOKEN,
+//       client_id: process.env.ZOHO_CLIENT_ID,
+//       client_secret: process.env.ZOHO_CLIENT_SECRET,
+//       grant_type: "refresh_token",
+//     }),
+//   });
+
+//   const data = await res.json();
+
+//   if (!data.access_token) {
+//     console.error(data);
+//     throw new Error("Zoho token failed");
+//   }
+
+//   return data.access_token;
+// }
+
+import axios from "axios";
+
+let cachedToken = null;
+let tokenExpiry = null;
+
 export async function getZohoAccessToken() {
-  const res = await fetch("https://accounts.zoho.in/oauth/v2/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      refresh_token: process.env.ZOHO_REFRESH_TOKEN,
-      client_id: process.env.ZOHO_CLIENT_ID,
-      client_secret: process.env.ZOHO_CLIENT_SECRET,
-      grant_type: "refresh_token",
-    }),
-  });
-
-  const data = await res.json();
-
-  if (!data.access_token) {
-    console.error(data);
-    throw new Error("Zoho token failed");
+  // reuse existing token
+  if (cachedToken && tokenExpiry > Date.now()) {
+    return cachedToken;
   }
 
-  return data.access_token;
+  try {
+    const response = await axios.post(
+      "https://accounts.zoho.in/oauth/v2/token",
+      null,
+      {
+        params: {
+          refresh_token: process.env.ZOHO_REFRESH_TOKEN,
+          client_id: process.env.ZOHO_CLIENT_ID,
+          client_secret: process.env.ZOHO_CLIENT_SECRET,
+          grant_type: "refresh_token",
+        },
+      }
+    );
+
+    cachedToken = response.data.access_token;
+
+    // expires_in is seconds
+    tokenExpiry = Date.now() + response.data.expires_in * 1000;
+
+    console.log("NEW ACCESS TOKEN GENERATED");
+
+    return cachedToken;
+  } catch (error) {
+    console.error("ACCESS TOKEN ERROR:", error.response?.data);
+    return null;
+  }
 }

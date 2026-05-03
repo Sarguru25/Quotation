@@ -1,4 +1,0 @@
-1. ORGANIZATION_ID
-2. get the client id and client server
-3. then get the code form the url with client_id
-4. with post man i got the access_token
