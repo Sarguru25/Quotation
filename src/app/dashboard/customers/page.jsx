@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RefreshCcw, Plus, X, Trash2, Edit, Users, Search, AlertCircle, Mail, Phone, Building2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { RefreshCcw, Plus, X, Trash2, Edit, Users, Search, AlertCircle, Mail, Phone, Building2, Eye } from "lucide-react";
 
 function InputField({ label, ...props }) {
   return (
@@ -16,23 +18,12 @@ function InputField({ label, ...props }) {
 }
 
 export default function CustomersPage() {
+  const router = useRouter();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
-
-  const [open, setOpen] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-
-  const initialFormState = {
-    contact_name: "",
-    company_name: "",
-    email: "",
-    phone: "",
-  };
-
-  const [form, setForm] = useState(initialFormState);
 
   function showToast(message, type = "success") {
     setToast({ message, type });
@@ -55,32 +46,6 @@ export default function CustomersPage() {
 
   useEffect(() => { fetchCustomers(); }, []);
 
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  }
-
-  async function handleSaveCustomer() {
-    if (!form.contact_name.trim()) { showToast("Contact name is required", "error"); return; }
-    try {
-      setSaving(true);
-      const url = editingId ? `/api/zoho/customers/${editingId}` : "/api/zoho/customers";
-      const method = editingId ? "PUT" : "POST";
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      if (!res.ok || data.success === false) { showToast(data.error || "Failed to save", "error"); return; }
-      showToast(`Customer ${editingId ? "updated" : "created"} successfully!`);
-      setOpen(false);
-      setEditingId(null);
-      setForm(initialFormState);
-      fetchCustomers();
-    } catch { showToast("Something went wrong", "error"); }
-    finally { setSaving(false); }
-  }
 
   async function deleteCustomer(id) {
     if (!window.confirm("Delete this customer? This cannot be undone.")) return;
@@ -93,15 +58,7 @@ export default function CustomersPage() {
     } catch { showToast("Something went wrong", "error"); }
   }
 
-  async function openEditModal(customer) {
-    setEditingId(customer.contact_id);
-    try {
-      const res = await fetch(`/api/zoho/customers/${customer.contact_id}`);
-      const full = await res.json();
-      if (full) setForm({ contact_name: full.contact_name || "", company_name: full.company_name || "", email: full.email || "", phone: full.phone || "" });
-    } catch (error) { console.error(error); }
-    setOpen(true);
-  }
+
 
   const filtered = customers.filter(
     (c) =>
@@ -158,12 +115,12 @@ export default function CustomersPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={() => { setEditingId(null); setForm(initialFormState); setOpen(true); }}
+          <Link
+            href="/dashboard/customers/new"
             className="btn-press flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm shadow-indigo-200 transition-colors"
           >
             <Plus size={16} /> New Customer
-          </button>
+          </Link>
           <button
             onClick={fetchCustomers}
             className="btn-press flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
@@ -201,7 +158,14 @@ export default function CustomersPage() {
             <tbody className="divide-y divide-slate-50">
               {filtered.length > 0 ? (
                 filtered.map((c) => (
-                  <tr key={c.contact_id} className="table-row-hover hover:bg-slate-50/70">
+                  <tr
+                    key={c.contact_id}
+                    className="table-row-hover hover:bg-indigo-50/50 cursor-pointer transition-colors"
+                    onClick={(e) => {
+                      if (e.target.closest("button")) return;
+                      router.push(`/dashboard/customers/${c.contact_id}`);
+                    }}
+                  >
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
                         <div className={`w-8 h-8 rounded-full ${avatarColor(c.contact_name)} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
@@ -237,14 +201,21 @@ export default function CustomersPage() {
                     <td className="px-5 py-3.5 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
-                          onClick={() => openEditModal(c)}
+                          onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/customers/${c.contact_id}`); }}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                          title="View"
+                        >
+                          <Eye size={15} />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/customers/${c.contact_id}/edit`); }}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
                           title="Edit"
                         >
                           <Edit size={15} />
                         </button>
                         <button
-                          onClick={() => deleteCustomer(c.contact_id)}
+                          onClick={(e) => { e.stopPropagation(); deleteCustomer(c.contact_id); }}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                           title="Delete"
                         >
@@ -268,50 +239,7 @@ export default function CustomersPage() {
         </div>
       </div>
 
-      {/* MODAL */}
-      {open && (
-        <div className="modal-backdrop fixed inset-0 bg-slate-900/60 flex justify-center items-center z-50 p-4">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-100">
-            <div className="flex justify-between items-center px-7 py-5 border-b border-slate-100">
-              <div>
-                <h2 className="text-xl font-bold text-slate-900">
-                  {editingId ? "Edit Customer" : "New Customer"}
-                </h2>
-                <p className="text-sm text-slate-400 mt-0.5">
-                  {editingId ? "Update the contact details" : "Add a new Zoho contact"}
-                </p>
-              </div>
-              <button onClick={() => setOpen(false)} className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
-                <X size={20} />
-              </button>
-            </div>
 
-            <div className="px-7 py-6 grid grid-cols-2 gap-5">
-              <div className="col-span-2">
-                <InputField label="Contact Name *" type="text" name="contact_name" value={form.contact_name} onChange={handleChange} placeholder="e.g. John Doe" required />
-              </div>
-              <div className="col-span-2">
-                <InputField label="Company Name" type="text" name="company_name" value={form.company_name} onChange={handleChange} placeholder="e.g. Acme Corp" />
-              </div>
-              <InputField label="Email" type="email" name="email" value={form.email} onChange={handleChange} placeholder="e.g. john@example.com" />
-              <InputField label="Phone" type="text" name="phone" value={form.phone} onChange={handleChange} placeholder="e.g. +91 98765 43210" />
-            </div>
-
-            <div className="flex justify-end gap-3 px-7 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl">
-              <button onClick={() => setOpen(false)} className="px-5 py-2.5 border border-slate-200 text-slate-600 hover:bg-slate-100 rounded-xl text-sm font-medium transition-colors">
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveCustomer}
-                disabled={saving}
-                className="btn-press px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white rounded-xl text-sm font-medium shadow-sm shadow-indigo-200 transition-colors"
-              >
-                {saving ? "Saving…" : editingId ? "Update Customer" : "Add Customer"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

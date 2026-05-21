@@ -1,39 +1,24 @@
 import { NextResponse } from "next/server";
-import axios from "axios";
-import { getZohoAccessToken } from "@/lib/zoho";
-
-const ZOHO_ORGANIZATION_ID = process.env.ZOHO_ORGANIZATION_ID;
+import { requirePermission } from "@/lib/rbac/auth";
+import { PERMISSIONS } from "@/lib/rbac/permissions";
+import { getQuotations } from "@/lib/zoho/quotations";
 
 export async function GET() {
   try {
-    // generate fresh access token
-    const accessToken = await getZohoAccessToken();
+    // 1. Authorization
+    await requirePermission(PERMISSIONS.QUOTATION.VIEW);
 
-    console.log("ACCESS TOKEN:", accessToken);
+    // 2. Fetch via Service Layer
+    const estimates = await getQuotations();
 
-    const response = await axios.get(
-      "https://www.zohoapis.in/books/v3/estimates",
-      {
-        headers: {
-          Authorization: `Zoho-oauthtoken ${accessToken}`,
-        },
-        params: {
-          organization_id: ZOHO_ORGANIZATION_ID,
-        },
-      }
-    );
-
-    console.log("ZOHO DATA:", response.data);
-
-    return NextResponse.json(
-      response.data.estimates || []
-    );
+    // 3. Return response
+    return NextResponse.json(estimates);
   } catch (error) {
-    console.log(
-      "QUOTE ERROR:",
-      error.response?.data || error.message
-    );
-
-    return NextResponse.json([]);
+    if (error.message?.includes("Forbidden") || error.message?.includes("Unauthorized")) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+    
+    console.error("[API] GET Quotes Error:", error);
+    return NextResponse.json([], { status: 500 });
   }
 }

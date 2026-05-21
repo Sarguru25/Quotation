@@ -1,10 +1,21 @@
 import { getZohoAccessToken } from "@/lib/zoho";
+import Image from "next/image";
+import QuotationActionBar from "./QuotationActionBar";
+import ActivityTimeline from "./ActivityTimeline";
+import dbConnect from "@/lib/db";
+import Quotation from "@/models/Quotation";
+import ActivityLog from "@/models/ActivityLog";
+import "@/models/User";
+
+const ZOHO_ORGANIZATION_ID = process.env.ZOHO_ORGANIZATION_ID;
 
 async function getQuotation(id) {
   try {
     const accessToken = await getZohoAccessToken();
+    if (!accessToken) throw new Error("Failed to get Zoho Access Token");
+
     const response = await fetch(
-      `https://www.zohoapis.in/books/v3/estimates/${id}?organization_id=${process.env.ZOHO_ORGANIZATION_ID}`,
+      `https://www.zohoapis.in/books/v3/estimates/${id}?organization_id=${ZOHO_ORGANIZATION_ID}`,
       {
         method: "GET",
         headers: {
@@ -30,6 +41,10 @@ async function getQuotation(id) {
 export default async function QuoteDetailsPage({ params }) {
   const { id } = await params;
   const quote = await getQuotation(id);
+  
+  await dbConnect();
+  const localQuote = await Quotation.findOne({ zohoQuoteId: id }).populate('userId', 'name email').lean();
+  const activityLogs = await ActivityLog.find({ "metadata.quotationId": id }).populate('user', 'name email').lean();
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-IN", {
@@ -53,13 +68,17 @@ export default async function QuoteDetailsPage({ params }) {
   };
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen flex justify-center">
-      <div className="bg-white w-full max-w-4xl shadow-xl border relative overflow-hidden print:shadow-none print:border-none print:p-0">
+    <div className="p-6 bg-gray-100 min-h-screen flex flex-col items-center">
+      <div className="w-full max-w-4xl">
+        <QuotationActionBar quote={quote} />
+      </div>
+      
+      <div className="bg-white w-full max-w-4xl shadow-xl border relative overflow-hidden print:shadow-none print:border-none print:p-0 mb-6">
 
         {/* Ribbon for Status */}
         {quote.status && (
           <div className="absolute top-0 left-0 w-32 h-32 overflow-hidden pointer-events-none">
-            <div className={`absolute -left-8 top-6 w-48 text-center text-white font-bold py-1 shadow-md transform -rotate-45 uppercase tracking-wider text-sm
+            <div className={`absolute -left-12 top-10 w-50 text-center text-white font-bold py-1 shadow-md transform -rotate-45 uppercase tracking-wider text-sm
                 ${quote.status === "accepted" || quote.status === "approved" || quote.status === "sent" ? "bg-blue-500" : "bg-yellow-500"}
               `}>
               {quote.status}
@@ -72,9 +91,8 @@ export default async function QuoteDetailsPage({ params }) {
           <div className="flex justify-between items-start">
             <div className="ml-12 mt-4">
               {/* TRUFLOW Logo text */}
-              <h1 className="text-4xl tracking-tighter">
-                <span className="text-red-600 font-extrabold">TRU</span>
-                <span className="text-gray-600 font-bold bg-gray-200 px-1">FLOW</span>
+              <h1 className="text-4xl">
+                <Image src="/TF_logo.png" alt="TruFlow" width={300} height={40} />
               </h1>
             </div>
 
@@ -160,6 +178,7 @@ export default async function QuoteDetailsPage({ params }) {
                 <th className="py-3 px-4 font-normal text-left border-r border-gray-200">Item & Description</th>
                 <th className="py-3 px-4 font-normal w-20 border-r border-gray-200">Qty</th>
                 <th className="py-3 px-4 font-normal w-32 border-r border-gray-200">Unit Price</th>
+                <th className="py-3 px-4 font-normal w-28 border-r border-gray-200">Tax</th>
                 <th className="py-3 px-4 font-normal w-32">Total Price</th>
               </tr>
             </thead>
@@ -168,13 +187,24 @@ export default async function QuoteDetailsPage({ params }) {
                 <tr key={item.line_item_id || index} className="border-b border-gray-100 text-gray-700">
                   <td className="py-4 px-4 text-center align-top border-r border-gray-200">{index + 1}</td>
                   <td className="py-4 px-4 align-top border-r border-gray-200">
-                    <p className="font-medium text-gray-800">{item.name}</p>
+                    <p className="font-bold text-gray-900">{item.name}</p>
                     {item.description && (
-                      <p className="mt-1 text-gray-500 whitespace-pre-wrap">{item.description}</p>
+                      <div className="mt-1 text-gray-500 text-sm leading-relaxed">
+                        {item.description.split('\n').map((line, i) => (
+                          <p key={i}>{line}</p>
+                        ))}
+                      </div>
                     )}
                   </td>
                   <td className="py-4 px-4 text-center align-top border-r border-gray-200">{item.quantity}</td>
                   <td className="py-4 px-4 text-right align-top border-r border-gray-200">{formatCurrency(item.rate)}</td>
+                  <td className="py-4 px-4 text-center align-top border-r border-gray-200">
+                    {item.tax_percentage ? (
+                      <span className="text-green-700 text-xs font-medium">{item.tax_name || `GST`} ({item.tax_percentage}%)</span>
+                    ) : (
+                      <span className="text-gray-400 text-xs">-</span>
+                    )}
+                  </td>
                   <td className="py-4 px-4 text-right align-top">{formatCurrency(item.item_total)}</td>
                 </tr>
               ))}
@@ -194,12 +224,26 @@ export default async function QuoteDetailsPage({ params }) {
               <span className="text-gray-800">{formatCurrency(quote.sub_total)}</span>
             </div>
 
+            {quote.discount_amount > 0 && (
+              <div className="flex justify-between py-2">
+                <span className="text-gray-600">Discount{quote.discount ? ` (${quote.discount}%)` : ''}</span>
+                <span className="text-red-500">-{formatCurrency(quote.discount_amount)}</span>
+              </div>
+            )}
+
             {quote.taxes?.map((tax) => (
               <div key={tax.tax_id} className="flex justify-between py-2">
                 <span className="text-gray-600">{tax.tax_name} ({tax.tax_percentage}%)</span>
                 <span className="text-gray-800">{formatCurrency(tax.tax_amount)}</span>
               </div>
             ))}
+
+            {quote.adjustment > 0 && (
+              <div className="flex justify-between py-2">
+                <span className="text-gray-600">Adjustment</span>
+                <span className="text-gray-800">{formatCurrency(quote.adjustment)}</span>
+              </div>
+            )}
 
             <div className="flex justify-between py-3 border-t border-b border-gray-200 mt-2">
               <span className="font-bold text-black">Total</span>
@@ -231,6 +275,8 @@ export default async function QuoteDetailsPage({ params }) {
         </div>
 
       </div>
+      
+      <ActivityTimeline quote={quote} localQuote={localQuote} activityLogs={activityLogs} />
     </div>
   );
 }

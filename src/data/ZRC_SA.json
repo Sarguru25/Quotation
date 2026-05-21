@@ -1,0 +1,1683 @@
+[
+  {
+    "model": "ZRC4SA",
+    "spring_qty": 5,
+    "air_pressure_bar": {
+      "2.5": {"start": 6, "end": 4},
+      "3": {"start": 8, "end": 6}
+    },
+    "spring_output": {"start": 6, "end": 4},
+    "price_inr": 4129.00,
+    "price_usd": 50.00
+  },
+  {
+    "model": "ZRC4SA",
+    "spring_qty": 6,
+    "air_pressure_bar": {
+      "2.5": {"start": 5, "end": 3},
+      "3": {"start": 7, "end": 5},
+      "4": {"start": 11, "end": 9}
+    },
+    "spring_output": {"start": 7, "end": 5},
+    "price_inr": 4129.00,
+    "price_usd": 50.00
+  },
+  {
+    "model": "ZRC4SA",
+    "spring_qty": 7,
+    "air_pressure_bar": {
+      "2.5": {"start": 4, "end": 1},
+      "3": {"start": 6, "end": 3},
+      "4": {"start": 10, "end": 7},
+      "5": {"start": 14, "end": 10}
+    },
+    "spring_output": {"start": 9, "end": 6},
+    "price_inr": 4129.00,
+    "price_usd": 50.00
+  },
+  {
+    "model": "ZRC4SA",
+    "spring_qty": 8,
+    "air_pressure_bar": {
+      "3": {"start": 5, "end": 2},
+      "4": {"start": 9, "end": 6},
+      "5": {"start": 13, "end": 9},
+      "6": {"start": 17, "end": 14}
+    },
+    "spring_output": {"start": 10, "end": 7},
+    "price_inr": 4129.00,
+    "price_usd": 50.00
+  },
+  {
+    "model": "ZRC4SA",
+    "spring_qty": 9,
+    "air_pressure_bar": {
+      "3": {"start": 4, "end": 1},
+      "4": {"start": 8, "end": 5},
+      "5": {"start": 12, "end": 8},
+      "6": {"start": 16, "end": 13},
+      "7": {"start": 20, "end": 17}
+    },
+    "spring_output": {"start": 11, "end": 8},
+    "price_inr": 4129.00,
+    "price_usd": 50.00
+  },
+  {
+    "model": "ZRC4SA",
+    "spring_qty": 10,
+    "air_pressure_bar": {
+      "4": {"start": 7, "end": 4},
+      "5": {"start": 12, "end": 7},
+      "6": {"start": 16, "end": 12},
+      "7": {"start": 20, "end": 16}
+    },
+    "spring_output": {"start": 12, "end": 9},
+    "price_inr": 4129.00,
+    "price_usd": 50.00
+  },
+  {
+    "model": "ZRC4SA",
+    "spring_qty": 11,
+    "air_pressure_bar": {
+      "4": {"start": 7, "end": 2},
+      "5": {"start": 11, "end": 5},
+      "6": {"start": 15, "end": 10},
+      "7": {"start": 19, "end": 14},
+      "8": {"start": 23, "end": 18}
+    },
+    "spring_output": {"start": 14, "end": 9},
+    "price_inr": 4129.00,
+    "price_usd": 50.00
+  },
+  {
+    "model": "ZRC4SA",
+    "spring_qty": 12,
+    "air_pressure_bar": {
+      "5": {"start": 10, "end": 4},
+      "6": {"start": 14, "end": 9},
+      "7": {"start": 18, "end": 12},
+      "8": {"start": 22, "end": 17}
+    },
+    "spring_output": {"start": 15, "end": 10},
+    "price_inr": 4129.00,
+    "price_usd": 50.00
+  },
+  {
+    "model": "ZRC6SA",
+    "spring_qty": 5,
+    "air_pressure_bar": {
+      "2.5": {"start": 11, "end": 8},
+      "3": {"start": 15, "end": 11},
+      "4": {"start": 22, "end": 15}
+    },
+    "spring_output": {"start": 10, "end": 7},
+    "price_inr": 5229.00,
+    "price_usd": 63.00
+  },
+  {
+    "model": "ZRC6SA",
+    "spring_qty": 6,
+    "air_pressure_bar": {
+      "2.5": {"start": 10, "end": 6},
+      "3": {"start": 14, "end": 9},
+      "4": {"start": 21, "end": 17},
+      "5": {"start": 28, "end": 24}
+    },
+    "spring_output": {"start": 13, "end": 8},
+    "price_inr": 5229.00,
+    "price_usd": 63.00
+  },
+  {
+    "model": "ZRC6SA",
+    "spring_qty": 7,
+    "air_pressure_bar": {
+      "2.5": {"start": 9, "end": 4},
+      "3": {"start": 13, "end": 7},
+      "4": {"start": 20, "end": 15},
+      "5": {"start": 27, "end": 22}
+    },
+    "spring_output": {"start": 15, "end": 10},
+    "price_inr": 5229.00,
+    "price_usd": 63.00
+  },
+  {
+    "model": "ZRC6SA",
+    "spring_qty": 8,
+    "air_pressure_bar": {
+      "3": {"start": 11, "end": 5},
+      "4": {"start": 18, "end": 12},
+      "5": {"start": 26, "end": 20},
+      "6": {"start": 33, "end": 27},
+      "7": {"start": 40, "end": 34}
+    },
+    "spring_output": {"start": 17, "end": 11},
+    "price_inr": 5229.00,
+    "price_usd": 63.00
+  },
+  {
+    "model": "ZRC6SA",
+    "spring_qty": 9,
+    "air_pressure_bar": {
+      "4": {"start": 17, "end": 10},
+      "5": {"start": 24, "end": 18},
+      "6": {"start": 31, "end": 25},
+      "7": {"start": 39, "end": 32}
+    },
+    "spring_output": {"start": 19, "end": 12},
+    "price_inr": 5229.00,
+    "price_usd": 63.00
+  },
+  {
+    "model": "ZRC6SA",
+    "spring_qty": 10,
+    "air_pressure_bar": {
+      "4": {"start": 16, "end": 8},
+      "5": {"start": 23, "end": 16},
+      "6": {"start": 30, "end": 23},
+      "7": {"start": 37, "end": 30},
+      "8": {"start": 45, "end": 37}
+    },
+    "spring_output": {"start": 21, "end": 14},
+    "price_inr": 5229.00,
+    "price_usd": 63.00
+  },
+  {
+    "model": "ZRC6SA",
+    "spring_qty": 11,
+    "air_pressure_bar": {
+      "5": {"start": 22, "end": 14},
+      "6": {"start": 29, "end": 21},
+      "7": {"start": 36, "end": 28},
+      "8": {"start": 43, "end": 35}
+    },
+    "spring_output": {"start": 23, "end": 15},
+    "price_inr": 5229.00,
+    "price_usd": 63.00
+  },
+  {
+    "model": "ZRC6SA",
+    "spring_qty": 12,
+    "air_pressure_bar": {
+      "5": {"start": 20, "end": 11},
+      "6": {"start": 27, "end": 19},
+      "7": {"start": 35, "end": 26},
+      "8": {"start": 42, "end": 33}
+    },
+    "spring_output": {"start": 25, "end": 16},
+    "price_inr": 5229.00,
+    "price_usd": 63.00
+  },
+  {
+    "model": "ZRC8SA",
+    "spring_qty": 5,
+    "air_pressure_bar": {
+      "2.5": {"start": 15, "end": 11},
+      "3": {"start": 19, "end": 16},
+      "4": {"start": 30, "end": 26}
+    },
+    "spring_output": {"start": 15, "end": 11},
+    "price_inr": 6054.00,
+    "price_usd": 73.00
+  },
+  {
+    "model": "ZRC8SA",
+    "spring_qty": 6,
+    "air_pressure_bar": {
+      "2.5": {"start": 12, "end": 8},
+      "3": {"start": 17, "end": 13},
+      "4": {"start": 27, "end": 23},
+      "5": {"start": 38, "end": 33}
+    },
+    "spring_output": {"start": 17, "end": 13},
+    "price_inr": 6054.00,
+    "price_usd": 73.00
+  },
+  {
+    "model": "ZRC8SA",
+    "spring_qty": 7,
+    "air_pressure_bar": {
+      "2.5": {"start": 10, "end": 5},
+      "3": {"start": 15, "end": 10},
+      "4": {"start": 25, "end": 20},
+      "5": {"start": 35, "end": 30}
+    },
+    "spring_output": {"start": 20, "end": 15},
+    "price_inr": 6054.00,
+    "price_usd": 73.00
+  },
+  {
+    "model": "ZRC8SA",
+    "spring_qty": 8,
+    "air_pressure_bar": {
+      "3": {"start": 13, "end": 7},
+      "4": {"start": 23, "end": 17},
+      "5": {"start": 33, "end": 27},
+      "6": {"start": 43, "end": 37},
+      "7": {"start": 53, "end": 47}
+    },
+    "spring_output": {"start": 23, "end": 17},
+    "price_inr": 6054.00,
+    "price_usd": 73.00
+  },
+  {
+    "model": "ZRC8SA",
+    "spring_qty": 9,
+    "air_pressure_bar": {
+      "4": {"start": 21, "end": 14},
+      "5": {"start": 31, "end": 24},
+      "6": {"start": 41, "end": 34},
+      "7": {"start": 51, "end": 44}
+    },
+    "spring_output": {"start": 26, "end": 19},
+    "price_inr": 6054.00,
+    "price_usd": 73.00
+  },
+  {
+    "model": "ZRC8SA",
+    "spring_qty": 10,
+    "air_pressure_bar": {
+      "4": {"start": 19, "end": 11},
+      "5": {"start": 29, "end": 21},
+      "6": {"start": 39, "end": 31},
+      "7": {"start": 49, "end": 41},
+      "8": {"start": 59, "end": 51}
+    },
+    "spring_output": {"start": 29, "end": 21},
+    "price_inr": 6054.00,
+    "price_usd": 73.00
+  },
+  {
+    "model": "ZRC8SA",
+    "spring_qty": 11,
+    "air_pressure_bar": {
+      "5": {"start": 27, "end": 18},
+      "6": {"start": 37, "end": 28},
+      "7": {"start": 47, "end": 38},
+      "8": {"start": 57, "end": 48}
+    },
+    "spring_output": {"start": 32, "end": 23},
+    "price_inr": 6054.00,
+    "price_usd": 73.00
+  },
+  {
+    "model": "ZRC8SA",
+    "spring_qty": 12,
+    "air_pressure_bar": {
+      "5": {"start": 25, "end": 15},
+      "6": {"start": 35, "end": 25},
+      "7": {"start": 45, "end": 35},
+      "8": {"start": 55, "end": 45}
+    },
+    "spring_output": {"start": 35, "end": 25},
+    "price_inr": 6054.00,
+    "price_usd": 73.00
+  },
+  {
+    "model": "ZRC10SA",
+    "spring_qty": 5,
+    "air_pressure_bar": {
+      "2.5": {"start": 24, "end": 16},
+      "3": {"start": 31, "end": 24},
+      "4": {"start": 47, "end": 38}
+    },
+    "spring_output": {"start": 23, "end": 16},
+    "price_inr": 7978.00,
+    "price_usd": 95.00
+  },
+  {
+    "model": "ZRC10SA",
+    "spring_qty": 6,
+    "air_pressure_bar": {
+      "2.5": {"start": 20, "end": 12},
+      "3": {"start": 28, "end": 19},
+      "4": {"start": 44, "end": 35},
+      "5": {"start": 59, "end": 51}
+    },
+    "spring_output": {"start": 28, "end": 19},
+    "price_inr": 7978.00,
+    "price_usd": 95.00
+  },
+  {
+    "model": "ZRC10SA",
+    "spring_qty": 7,
+    "air_pressure_bar": {
+      "2.5": {"start": 17, "end": 7},
+      "3": {"start": 25, "end": 15},
+      "4": {"start": 41, "end": 31},
+      "5": {"start": 56, "end": 46}
+    },
+    "spring_output": {"start": 32, "end": 22},
+    "price_inr": 7978.00,
+    "price_usd": 95.00
+  },
+  {
+    "model": "ZRC10SA",
+    "spring_qty": 8,
+    "air_pressure_bar": {
+      "3": {"start": 22, "end": 10},
+      "4": {"start": 37, "end": 26},
+      "5": {"start": 53, "end": 42},
+      "6": {"start": 69, "end": 57},
+      "7": {"start": 85, "end": 73}
+    },
+    "spring_output": {"start": 37, "end": 25},
+    "price_inr": 7978.00,
+    "price_usd": 95.00
+  },
+  {
+    "model": "ZRC10SA",
+    "spring_qty": 9,
+    "air_pressure_bar": {
+      "4": {"start": 34, "end": 21},
+      "5": {"start": 50, "end": 37},
+      "6": {"start": 66, "end": 53},
+      "7": {"start": 81, "end": 68}
+    },
+    "spring_output": {"start": 41, "end": 29},
+    "price_inr": 7978.00,
+    "price_usd": 95.00
+  },
+  {
+    "model": "ZRC10SA",
+    "spring_qty": 10,
+    "air_pressure_bar": {
+      "4": {"start": 31, "end": 17},
+      "5": {"start": 47, "end": 32},
+      "6": {"start": 62, "end": 48},
+      "7": {"start": 78, "end": 64},
+      "8": {"start": 94, "end": 79}
+    },
+    "spring_output": {"start": 46, "end": 32},
+    "price_inr": 7978.00,
+    "price_usd": 95.00
+  },
+  {
+    "model": "ZRC10SA",
+    "spring_qty": 11,
+    "air_pressure_bar": {
+      "5": {"start": 44, "end": 28},
+      "6": {"start": 59, "end": 43},
+      "7": {"start": 75, "end": 59},
+      "8": {"start": 91, "end": 75}
+    },
+    "spring_output": {"start": 51, "end": 35},
+    "price_inr": 7978.00,
+    "price_usd": 95.00
+  },
+  {
+    "model": "ZRC10SA",
+    "spring_qty": 12,
+    "air_pressure_bar": {
+      "5": {"start": 40, "end": 23},
+      "6": {"start": 56, "end": 39},
+      "7": {"start": 72, "end": 55},
+      "8": {"start": 87, "end": 70}
+    },
+    "spring_output": {"start": 55, "end": 38},
+    "price_inr": 7978.00,
+    "price_usd": 95.00
+  },
+
+  {
+    "model": "ZRC12SA",
+    "spring_qty": 5,
+    "air_pressure_bar": {
+      "2.5": {"start": 33, "end": 22},
+      "3": {"start": 44, "end": 33},
+      "4": {"start": 67, "end": 56}
+    },
+    "spring_output": {"start": 34, "end": 23.3},
+    "price_inr": 9627.00,
+    "price_usd": 115.00
+  },
+  {
+    "model": "ZRC12SA",
+    "spring_qty": 6,
+    "air_pressure_bar": {
+      "2.5": {"start": 28, "end": 15},
+      "3": {"start": 40, "end": 26},
+      "4": {"start": 62, "end": 49},
+      "5": {"start": 85, "end": 72}
+    },
+    "spring_output": {"start": 41, "end": 28},
+    "price_inr": 9627.00,
+    "price_usd": 115.00
+  },
+  {
+    "model": "ZRC12SA",
+    "spring_qty": 7,
+    "air_pressure_bar": {
+      "2.5": {"start": 24, "end": 8},
+      "3": {"start": 35, "end": 19},
+      "4": {"start": 58, "end": 42},
+      "5": {"start": 80, "end": 65}
+    },
+    "spring_output": {"start": 48, "end": 33},
+    "price_inr": 9627.00,
+    "price_usd": 115.00
+  },
+  {
+    "model": "ZRC12SA",
+    "spring_qty": 8,
+    "air_pressure_bar": {
+      "3": {"start": 31, "end": 13},
+      "4": {"start": 53, "end": 35},
+      "5": {"start": 76, "end": 58},
+      "6": {"start": 98, "end": 81},
+      "7": {"start": 121, "end": 103}
+    },
+    "spring_output": {"start": 55, "end": 37},
+    "price_inr": 9627.00,
+    "price_usd": 115.00
+  },
+  {
+    "model": "ZRC12SA",
+    "spring_qty": 9,
+    "air_pressure_bar": {
+      "4": {"start": 48, "end": 28},
+      "5": {"start": 71, "end": 51},
+      "6": {"start": 94, "end": 74},
+      "7": {"start": 116, "end": 96}
+    },
+    "spring_output": {"start": 62, "end": 42},
+    "price_inr": 9627.00,
+    "price_usd": 115.00
+  },
+  {
+    "model": "ZRC12SA",
+    "spring_qty": 10,
+    "air_pressure_bar": {
+      "4": {"start": 44, "end": 22},
+      "5": {"start": 66, "end": 44},
+      "6": {"start": 89, "end": 67},
+      "7": {"start": 111, "end": 89},
+      "8": {"start": 134, "end": 112}
+    },
+    "spring_output": {"start": 69, "end": 47},
+    "price_inr": 9627.00,
+    "price_usd": 115.00
+  },
+  {
+    "model": "ZRC12SA",
+    "spring_qty": 11,
+    "air_pressure_bar": {
+      "5": {"start": 62, "end": 37},
+      "6": {"start": 84, "end": 60},
+      "7": {"start": 107, "end": 82},
+      "8": {"start": 129, "end": 105}
+    },
+    "spring_output": {"start": 76, "end": 51},
+    "price_inr": 9627.00,
+    "price_usd": 115.00
+  },
+  {
+    "model": "ZRC12SA",
+    "spring_qty": 12,
+    "air_pressure_bar": {
+      "5": {"start": 57, "end": 30},
+      "6": {"start": 79, "end": 53},
+      "7": {"start": 102, "end": 76},
+      "8": {"start": 125, "end": 98}
+    },
+    "spring_output": {"start": 83, "end": 56},
+    "price_inr": 9627.00,
+    "price_usd": 115.00
+  },
+  {
+    "model": "ZRC14SA",
+    "spring_qty": 5,
+    "air_pressure_bar": {
+      "2.5": {"start": 51, "end": 33},
+      "3": {"start": 68, "end": 50},
+      "4": {"start": 101, "end": 83}
+    },
+    "spring_output": {"start": 49, "end": 31.6},
+    "price_inr": 12103.00,
+    "price_usd": 145.00
+  },
+  {
+    "model": "ZRC14SA",
+    "spring_qty": 6,
+    "air_pressure_bar": {
+      "2.5": {"start": 45, "end": 24},
+      "3": {"start": 61, "end": 40},
+      "4": {"start": 94, "end": 73},
+      "5": {"start": 127, "end": 106}
+    },
+    "spring_output": {"start": 59, "end": 38},
+    "price_inr": 12103.00,
+    "price_usd": 145.00
+  },
+  {
+    "model": "ZRC14SA",
+    "spring_qty": 7,
+    "air_pressure_bar": {
+      "2.5": {"start": 38, "end": 14},
+      "3": {"start": 55, "end": 30},
+      "4": {"start": 88, "end": 63},
+      "5": {"start": 121, "end": 96}
+    },
+    "spring_output": {"start": 69, "end": 44},
+    "price_inr": 12103.00,
+    "price_usd": 145.00
+  },
+  {
+    "model": "ZRC14SA",
+    "spring_qty": 8,
+    "air_pressure_bar": {
+      "3": {"start": 49, "end": 20},
+      "4": {"start": 82, "end": 54},
+      "5": {"start": 115, "end": 87},
+      "6": {"start": 148, "end": 120},
+      "7": {"start": 181, "end": 153}
+    },
+    "spring_output": {"start": 79, "end": 51},
+    "price_inr": 12103.00,
+    "price_usd": 145.00
+  },
+  {
+    "model": "ZRC14SA",
+    "spring_qty": 9,
+    "air_pressure_bar": {
+      "4": {"start": 75, "end": 44},
+      "5": {"start": 108, "end": 77},
+      "6": {"start": 142, "end": 110},
+      "7": {"start": 175, "end": 143}
+    },
+    "spring_output": {"start": 89, "end": 57},
+    "price_inr": 12103.00,
+    "price_usd": 145.00
+  },
+  {
+    "model": "ZRC14SA",
+    "spring_qty": 10,
+    "air_pressure_bar": {
+      "4": {"start": 69, "end": 33},
+      "5": {"start": 102, "end": 67},
+      "6": {"start": 135, "end": 100},
+      "7": {"start": 168, "end": 133},
+      "8": {"start": 201, "end": 166}
+    },
+    "spring_output": {"start": 98, "end": 63},
+    "price_inr": 12103.00,
+    "price_usd": 145.00
+  },
+  {
+    "model": "ZRC14SA",
+    "spring_qty": 11,
+    "air_pressure_bar": {
+      "5": {"start": 96, "end": 57},
+      "6": {"start": 129, "end": 90},
+      "7": {"start": 162, "end": 123},
+      "8": {"start": 195, "end": 156}
+    },
+    "spring_output": {"start": 108, "end": 70},
+    "price_inr": 12103.00,
+    "price_usd": 145.00
+  },
+  {
+    "model": "ZRC14SA",
+    "spring_qty": 12,
+    "air_pressure_bar": {
+      "5": {"start": 89, "end": 48},
+      "6": {"start": 123, "end": 81},
+      "7": {"start": 156, "end": 114},
+      "8": {"start": 189, "end": 147}
+    },
+    "spring_output": {"start": 118, "end": 76},
+    "price_inr": 12103.00,
+    "price_usd": 145.00
+  },
+  {
+    "model": "ZRC16SA",
+    "spring_qty": 5,
+    "air_pressure_bar": {
+      "2.5": {"start": 73, "end": 47},
+      "3": {"start": 98, "end": 72},
+      "4": {"start": 148, "end": 122}
+    },
+    "spring_output": {"start": 79, "end": 52},
+    "price_inr": 17052.00,
+    "price_usd": 203.00
+  },
+  {
+    "model": "ZRC16SA",
+    "spring_qty": 6,
+    "air_pressure_bar": {
+      "2.5": {"start": 63, "end": 31},
+      "3": {"start": 88, "end": 56},
+      "4": {"start": 138, "end": 107},
+      "5": {"start": 188, "end": 157}
+    },
+    "spring_output": {"start": 94, "end": 63},
+    "price_inr": 17052.00,
+    "price_usd": 203.00
+  },
+  {
+    "model": "ZRC16SA",
+    "spring_qty": 7,
+    "air_pressure_bar": {
+      "2.5": {"start": 52, "end": 15},
+      "3": {"start": 77, "end": 40},
+      "4": {"start": 127, "end": 90},
+      "5": {"start": 178, "end": 141}
+    },
+    "spring_output": {"start": 110, "end": 73},
+    "price_inr": 17052.00,
+    "price_usd": 203.00
+  },
+  {
+    "model": "ZRC16SA",
+    "spring_qty": 8,
+    "air_pressure_bar": {
+      "3": {"start": 67, "end": 25},
+      "4": {"start": 117, "end": 75},
+      "5": {"start": 167, "end": 125},
+      "6": {"start": 217, "end": 176},
+      "7": {"start": 268, "end": 226}
+    },
+    "spring_output": {"start": 125, "end": 84},
+    "price_inr": 17052.00,
+    "price_usd": 203.00
+  },
+  {
+    "model": "ZRC16SA",
+    "spring_qty": 9,
+    "air_pressure_bar": {
+      "4": {"start": 107, "end": 59},
+      "5": {"start": 157, "end": 109},
+      "6": {"start": 207, "end": 159},
+      "7": {"start": 257, "end": 210}
+    },
+    "spring_output": {"start": 141, "end": 94},
+    "price_inr": 17052.00,
+    "price_usd": 203.00
+  },
+  {
+    "model": "ZRC16SA",
+    "spring_qty": 10,
+    "air_pressure_bar": {
+      "4": {"start": 96, "end": 44},
+      "5": {"start": 146, "end": 94},
+      "6": {"start": 196, "end": 144},
+      "7": {"start": 247, "end": 194},
+      "8": {"start": 297, "end": 245}
+    },
+    "spring_output": {"start": 157, "end": 105},
+    "price_inr": 17052.00,
+    "price_usd": 203.00
+  },
+  {
+    "model": "ZRC16SA",
+    "spring_qty": 11,
+    "air_pressure_bar": {
+      "5": {"start": 136, "end": 78},
+      "6": {"start": 186, "end": 128},
+      "7": {"start": 236, "end": 178},
+      "8": {"start": 286, "end": 228}
+    },
+    "spring_output": {"start": 173, "end": 115},
+    "price_inr": 17052.00,
+    "price_usd": 203.00
+  },
+  {
+    "model": "ZRC16SA",
+    "spring_qty": 12,
+    "air_pressure_bar": {
+      "5": {"start": 125, "end": 63},
+      "6": {"start": 176, "end": 113},
+      "7": {"start": 226, "end": 163},
+      "8": {"start": 276, "end": 213}
+    },
+    "spring_output": {"start": 188, "end": 125},
+    "price_inr": 17052.00,
+    "price_usd": 203.00
+  },
+
+  {
+    "model": "ZRC20SA",
+    "spring_qty": 5,
+    "air_pressure_bar": {
+      "2.5": {"start": 128, "end": 85},
+      "3": {"start": 171, "end": 127},
+      "4": {"start": 256, "end": 213}
+    },
+    "spring_output": {"start": 129, "end": 86},
+    "price_inr": 26125.00,
+    "price_usd": 312.00
+  },
+  {
+    "model": "ZRC20SA",
+    "spring_qty": 6,
+    "air_pressure_bar": {
+      "2.5": {"start": 111, "end": 59},
+      "3": {"start": 154, "end": 102},
+      "4": {"start": 239, "end": 187},
+      "5": {"start": 325, "end": 273}
+    },
+    "spring_output": {"start": 155, "end": 103},
+    "price_inr": 26125.00,
+    "price_usd": 312.00
+  },
+  {
+    "model": "ZRC20SA",
+    "spring_qty": 7,
+    "air_pressure_bar": {
+      "2.5": {"start": 94, "end": 33},
+      "3": {"start": 137, "end": 76},
+      "4": {"start": 222, "end": 162},
+      "5": {"start": 308, "end": 247}
+    },
+    "spring_output": {"start": 181, "end": 120},
+    "price_inr": 26125.00,
+    "price_usd": 312.00
+  },
+  {
+    "model": "ZRC20SA",
+    "spring_qty": 8,
+    "air_pressure_bar": {
+      "3": {"start": 120, "end": 50},
+      "4": {"start": 205, "end": 136},
+      "5": {"start": 291, "end": 221},
+      "6": {"start": 376, "end": 307},
+      "7": {"start": 462, "end": 392}
+    },
+    "spring_output": {"start": 206, "end": 137},
+    "price_inr": 26125.00,
+    "price_usd": 312.00
+  },
+  {
+    "model": "ZRC20SA",
+    "spring_qty": 9,
+    "air_pressure_bar": {
+      "4": {"start": 187, "end": 110},
+      "5": {"start": 273, "end": 196},
+      "6": {"start": 358, "end": 281},
+      "7": {"start": 444, "end": 367}
+    },
+    "spring_output": {"start": 232, "end": 155},
+    "price_inr": 26125.00,
+    "price_usd": 312.00
+  },
+  {
+    "model": "ZRC20SA",
+    "spring_qty": 10,
+    "air_pressure_bar": {
+      "4": {"start": 170, "end": 84},
+      "5": {"start": 256, "end": 169},
+      "6": {"start": 341, "end": 255},
+      "7": {"start": 427, "end": 340},
+      "8": {"start": 512, "end": 426}
+    },
+    "spring_output": {"start": 258, "end": 172},
+    "price_inr": 26125.00,
+    "price_usd": 312.00
+  },
+  {
+    "model": "ZRC20SA",
+    "spring_qty": 11,
+    "air_pressure_bar": {
+      "5": {"start": 238, "end": 143},
+      "6": {"start": 324, "end": 229},
+      "7": {"start": 409, "end": 314},
+      "8": {"start": 495, "end": 400}
+    },
+    "spring_output": {"start": 284, "end": 189},
+    "price_inr": 26125.00,
+    "price_usd": 312.00
+  },
+  {
+    "model": "ZRC20SA",
+    "spring_qty": 12,
+    "air_pressure_bar": {
+      "5": {"start": 221, "end": 118},
+      "6": {"start": 307, "end": 203},
+      "7": {"start": 392, "end": 289},
+      "8": {"start": 478, "end": 374}
+    },
+    "spring_output": {"start": 310, "end": 206},
+    "price_inr": 26125.00,
+    "price_usd": 312.00
+  },
+  {
+    "model": "ZRC22SA",
+    "spring_qty": 5,
+    "air_pressure_bar": {
+      "2.5": {"start": 193, "end": 124},
+      "3": {"start": 259, "end": 191},
+      "4": {"start": 392, "end": 324}
+    },
+    "spring_output": {"start": 208, "end": 140},
+    "price_inr": 38774.00,
+    "price_usd": 462.00
+  },
+  {
+    "model": "ZRC22SA",
+    "spring_qty": 6,
+    "air_pressure_bar": {
+      "2.5": {"start": 165, "end": 83},
+      "3": {"start": 232, "end": 149},
+      "4": {"start": 365, "end": 282},
+      "5": {"start": 498, "end": 415}
+    },
+    "spring_output": {"start": 250, "end": 168},
+    "price_inr": 38774.00,
+    "price_usd": 462.00
+  },
+  {
+    "model": "ZRC22SA",
+    "spring_qty": 7,
+    "air_pressure_bar": {
+      "2.5": {"start": 137, "end": 41},
+      "3": {"start": 203, "end": 107},
+      "4": {"start": 336, "end": 240},
+      "5": {"start": 469, "end": 373}
+    },
+    "spring_output": {"start": 292, "end": 196},
+    "price_inr": 38774.00,
+    "price_usd": 462.00
+  },
+  {
+    "model": "ZRC22SA",
+    "spring_qty": 8,
+    "air_pressure_bar": {
+      "3": {"start": 176, "end": 66},
+      "4": {"start": 309, "end": 199},
+      "5": {"start": 442, "end": 332},
+      "6": {"start": 575, "end": 465},
+      "7": {"start": 708, "end": 598}
+    },
+    "spring_output": {"start": 333, "end": 223},
+    "price_inr": 38774.00,
+    "price_usd": 462.00
+  },
+  {
+    "model": "ZRC22SA",
+    "spring_qty": 9,
+    "air_pressure_bar": {
+      "4": {"start": 280, "end": 157},
+      "5": {"start": 413, "end": 290},
+      "6": {"start": 546, "end": 423},
+      "7": {"start": 679, "end": 556}
+    },
+    "spring_output": {"start": 375, "end": 251},
+    "price_inr": 38774.00,
+    "price_usd": 462.00
+  },
+  {
+    "model": "ZRC22SA",
+    "spring_qty": 10,
+    "air_pressure_bar": {
+      "4": {"start": 253, "end": 115},
+      "5": {"start": 386, "end": 248},
+      "6": {"start": 519, "end": 381},
+      "7": {"start": 652, "end": 514},
+      "8": {"start": 785, "end": 647}
+    },
+    "spring_output": {"start": 417, "end": 279},
+    "price_inr": 38774.00,
+    "price_usd": 462.00
+  },
+  {
+    "model": "ZRC22SA",
+    "spring_qty": 11,
+    "air_pressure_bar": {
+      "5": {"start": 358, "end": 207},
+      "6": {"start": 491, "end": 340},
+      "7": {"start": 624, "end": 473},
+      "8": {"start": 757, "end": 606}
+    },
+    "spring_output": {"start": 458, "end": 307},
+    "price_inr": 38774.00,
+    "price_usd": 462.00
+  },
+  {
+    "model": "ZRC22SA",
+    "spring_qty": 12,
+    "air_pressure_bar": {
+      "5": {"start": 330, "end": 165},
+      "6": {"start": 463, "end": 298},
+      "7": {"start": 596, "end": 431},
+      "8": {"start": 729, "end": 564}
+    },
+    "spring_output": {"start": 500, "end": 335},
+    "price_inr": 38774.00,
+    "price_usd": 462.00
+  },
+  {
+    "model": "ZRC24SA",
+    "spring_qty": 5,
+    "air_pressure_bar": {
+      "2.5": {"start": 332, "end": 222},
+      "3": {"start": 438, "end": 329},
+      "4": {"start": 651, "end": 542}
+    },
+    "spring_output": {"start": 309, "end": 200},
+    "price_inr": 55547.00,
+    "price_usd": 662.00
+  },
+  {
+    "model": "ZRC24SA",
+    "spring_qty": 6,
+    "air_pressure_bar": {
+      "2.5": {"start": 292, "end": 161},
+      "3": {"start": 398, "end": 267},
+      "4": {"start": 611, "end": 480},
+      "5": {"start": 824, "end": 693}
+    },
+    "spring_output": {"start": 371, "end": 240},
+    "price_inr": 55547.00,
+    "price_usd": 662.00
+  },
+  {
+    "model": "ZRC24SA",
+    "spring_qty": 7,
+    "air_pressure_bar": {
+      "2.5": {"start": 252, "end": 99},
+      "3": {"start": 358, "end": 205},
+      "4": {"start": 571, "end": 418},
+      "5": {"start": 784, "end": 631}
+    },
+    "spring_output": {"start": 433, "end": 280},
+    "price_inr": 55547.00,
+    "price_usd": 662.00
+  },
+  {
+    "model": "ZRC24SA",
+    "spring_qty": 8,
+    "air_pressure_bar": {
+      "3": {"start": 318, "end": 143},
+      "4": {"start": 531, "end": 356},
+      "5": {"start": 744, "end": 569},
+      "6": {"start": 957, "end": 782},
+      "7": {"start": 1169, "end": 995}
+    },
+    "spring_output": {"start": 495, "end": 320},
+    "price_inr": 55547.00,
+    "price_usd": 662.00
+  },
+  {
+    "model": "ZRC24SA",
+    "spring_qty": 9,
+    "air_pressure_bar": {
+      "4": {"start": 491, "end": 295},
+      "5": {"start": 704, "end": 507},
+      "6": {"start": 917, "end": 720},
+      "7": {"start": 1130, "end": 933}
+    },
+    "spring_output": {"start": 557, "end": 360},
+    "price_inr": 55547.00,
+    "price_usd": 662.00
+  },
+  {
+    "model": "ZRC24SA",
+    "spring_qty": 10,
+    "air_pressure_bar": {
+      "4": {"start": 451, "end": 233},
+      "5": {"start": 664, "end": 446},
+      "6": {"start": 877, "end": 658},
+      "7": {"start": 1090, "end": 871},
+      "8": {"start": 1302, "end": 1084}
+    },
+    "spring_output": {"start": 618, "end": 400},
+    "price_inr": 55547.00,
+    "price_usd": 662.00
+  },
+  {
+    "model": "ZRC24SA",
+    "spring_qty": 11,
+    "air_pressure_bar": {
+      "5": {"start": 624, "end": 384},
+      "6": {"start": 837, "end": 597},
+      "7": {"start": 1050, "end": 809},
+      "8": {"start": 1263, "end": 1022}
+    },
+    "spring_output": {"start": 680, "end": 440},
+    "price_inr": 55547.00,
+    "price_usd": 662.00
+  },
+  {
+    "model": "ZRC24SA",
+    "spring_qty": 12,
+    "air_pressure_bar": {
+      "5": {"start": 584, "end": 322},
+      "6": {"start": 797, "end": 535},
+      "7": {"start": 1010, "end": 748},
+      "8": {"start": 1223, "end": 960}
+    },
+    "spring_output": {"start": 742, "end": 480},
+    "price_inr": 55547.00,
+    "price_usd": 662.00
+  },
+  {
+    "model": "ZRC26SA",
+    "spring_qty": 5,
+    "air_pressure_bar": {
+      "2.5": {"start": 390, "end": 285},
+      "3": {"start": 523, "end": 418},
+      "4": {"start": 789, "end": 684}
+    },
+    "spring_output": {"start": 380, "end": 275},
+    "price_inr": 66820.00,
+    "price_usd": 796.00
+  },
+  {
+    "model": "ZRC26SA",
+    "spring_qty": 6,
+    "air_pressure_bar": {
+      "2.5": {"start": 335, "end": 209},
+      "3": {"start": 468, "end": 342},
+      "4": {"start": 734, "end": 608},
+      "5": {"start": 1000, "end": 874}
+    },
+    "spring_output": {"start": 456, "end": 330},
+    "price_inr": 66820.00,
+    "price_usd": 796.00
+  },
+  {
+    "model": "ZRC26SA",
+    "spring_qty": 7,
+    "air_pressure_bar": {
+      "2.5": {"start": 280, "end": 133},
+      "3": {"start": 413, "end": 266},
+      "4": {"start": 679, "end": 532},
+      "5": {"start": 945, "end": 798}
+    },
+    "spring_output": {"start": 532, "end": 385},
+    "price_inr": 66820.00,
+    "price_usd": 796.00
+  },
+  {
+    "model": "ZRC26SA",
+    "spring_qty": 8,
+    "air_pressure_bar": {
+      "3": {"start": 358, "end": 190},
+      "4": {"start": 624, "end": 456},
+      "5": {"start": 890, "end": 722},
+      "6": {"start": 1156, "end": 988},
+      "7": {"start": 1422, "end": 1254}
+    },
+    "spring_output": {"start": 608, "end": 440},
+    "price_inr": 66820.00,
+    "price_usd": 796.00
+  },
+  {
+    "model": "ZRC26SA",
+    "spring_qty": 9,
+    "air_pressure_bar": {
+      "4": {"start": 569, "end": 380},
+      "5": {"start": 835, "end": 646},
+      "6": {"start": 1101, "end": 912},
+      "7": {"start": 1367, "end": 1178}
+    },
+    "spring_output": {"start": 684, "end": 495},
+    "price_inr": 66820.00,
+    "price_usd": 796.00
+  },
+  {
+    "model": "ZRC26SA",
+    "spring_qty": 10,
+    "air_pressure_bar": {
+      "4": {"start": 514, "end": 304},
+      "5": {"start": 780, "end": 570},
+      "6": {"start": 1046, "end": 836},
+      "7": {"start": 1312, "end": 1102},
+      "8": {"start": 1578, "end": 1368}
+    },
+    "spring_output": {"start": 760, "end": 550},
+    "price_inr": 66820.00,
+    "price_usd": 796.00
+  },
+  {
+    "model": "ZRC26SA",
+    "spring_qty": 11,
+    "air_pressure_bar": {
+      "5": {"start": 725, "end": 494},
+      "6": {"start": 991, "end": 760},
+      "7": {"start": 1257, "end": 1026},
+      "8": {"start": 1523, "end": 1292}
+    },
+    "spring_output": {"start": 836, "end": 605},
+    "price_inr": 66820.00,
+    "price_usd": 796.00
+  },
+  {
+    "model": "ZRC26SA",
+    "spring_qty": 12,
+    "air_pressure_bar": {
+      "5": {"start": 670, "end": 418},
+      "6": {"start": 936, "end": 684},
+      "7": {"start": 1202, "end": 950},
+      "8": {"start": 1468, "end": 1216}
+    },
+    "spring_output": {"start": 912, "end": 660},
+    "price_inr": 66820.00,
+    "price_usd": 796.00
+  },
+  {
+    "model": "ZRC28SA",
+    "spring_qty": 5,
+    "air_pressure_bar": {
+      "2.5": {"start": 552, "end": 409},
+      "3": {"start": 744, "end": 600},
+      "4": {"start": 1129, "end": 985}
+    },
+    "spring_output": {"start": 554, "end": 410},
+    "price_inr": 102292.00,
+    "price_usd": 1218.00
+  },
+  {
+    "model": "ZRC28SA",
+    "spring_qty": 6,
+    "air_pressure_bar": {
+      "2.5": {"start": 470, "end": 297},
+      "3": {"start": 662, "end": 489},
+      "4": {"start": 1047, "end": 874},
+      "5": {"start": 1432, "end": 1259}
+    },
+    "spring_output": {"start": 665, "end": 490},
+    "price_inr": 102292.00,
+    "price_usd": 1218.00
+  },
+  {
+    "model": "ZRC28SA",
+    "spring_qty": 7,
+    "air_pressure_bar": {
+      "2.5": {"start": 388, "end": 187},
+      "3": {"start": 580, "end": 379},
+      "4": {"start": 964, "end": 764},
+      "5": {"start": 1349, "end": 1149}
+    },
+    "spring_output": {"start": 775, "end": 575},
+    "price_inr": 102292.00,
+    "price_usd": 1218.00
+  },
+  {
+    "model": "ZRC28SA",
+    "spring_qty": 8,
+    "air_pressure_bar": {
+      "3": {"start": 498, "end": 268},
+      "4": {"start": 883, "end": 653},
+      "5": {"start": 1267, "end": 1037},
+      "6": {"start": 1652, "end": 1422},
+      "7": {"start": 2037, "end": 1807}
+    },
+    "spring_output": {"start": 886, "end": 656},
+    "price_inr": 102292.00,
+    "price_usd": 1218.00
+  },
+  {
+    "model": "ZRC28SA",
+    "spring_qty": 9,
+    "air_pressure_bar": {
+      "4": {"start": 800, "end": 542},
+      "5": {"start": 1185, "end": 926},
+      "6": {"start": 1569, "end": 1311},
+      "7": {"start": 1954, "end": 1696}
+    },
+    "spring_output": {"start": 998, "end": 739},
+    "price_inr": 102292.00,
+    "price_usd": 1218.00
+  },
+  {
+    "model": "ZRC28SA",
+    "spring_qty": 10,
+    "air_pressure_bar": {
+      "4": {"start": 718, "end": 431},
+      "5": {"start": 1103, "end": 816},
+      "6": {"start": 1488, "end": 1201},
+      "7": {"start": 1872, "end": 1586},
+      "8": {"start": 2257, "end": 1970}
+    },
+    "spring_output": {"start": 1108, "end": 821},
+    "price_inr": 102292.00,
+    "price_usd": 1218.00
+  },
+  {
+    "model": "ZRC28SA",
+    "spring_qty": 11,
+    "air_pressure_bar": {
+      "5": {"start": 1021, "end": 705},
+      "6": {"start": 1406, "end": 1090},
+      "7": {"start": 1791, "end": 1471},
+      "8": {"start": 2176, "end": 1859}
+    },
+    "spring_output": {"start": 1219, "end": 903},
+    "price_inr": 102292.00,
+    "price_usd": 1218.00
+  },
+  {
+    "model": "ZRC28SA",
+    "spring_qty": 12,
+    "air_pressure_bar": {
+      "5": {"start": 939, "end": 594},
+      "6": {"start": 1323, "end": 979},
+      "7": {"start": 1708, "end": 1363},
+      "8": {"start": 2093, "end": 1748}
+    },
+    "spring_output": {"start": 1330, "end": 985},
+    "price_inr": 102292.00,
+    "price_usd": 1218.00
+  },
+  {
+    "model": "ZRC30SA",
+    "spring_qty": 5,
+    "air_pressure_bar": {
+      "2.5": {"start": 903, "end": 675},
+      "3": {"start": 1195, "end": 968},
+      "4": {"start": 1779, "end": 1552}
+    },
+    "spring_output": {"start": 787, "end": 560},
+    "price_inr": 140512.00,
+    "price_usd": 1673.00
+  },
+  {
+    "model": "ZRC30SA",
+    "spring_qty": 6,
+    "air_pressure_bar": {
+      "2.5": {"start": 790, "end": 519},
+      "3": {"start": 1083, "end": 811},
+      "4": {"start": 1667, "end": 1396},
+      "5": {"start": 2252, "end": 1981}
+    },
+    "spring_output": {"start": 943, "end": 672},
+    "price_inr": 140512.00,
+    "price_usd": 1673.00
+  },
+  {
+    "model": "ZRC30SA",
+    "spring_qty": 7,
+    "air_pressure_bar": {
+      "2.5": {"start": 679, "end": 361},
+      "3": {"start": 972, "end": 654},
+      "4": {"start": 1556, "end": 1238},
+      "5": {"start": 2141, "end": 1823}
+    },
+    "spring_output": {"start": 1101, "end": 783},
+    "price_inr": 140512.00,
+    "price_usd": 1673.00
+  },
+  {
+    "model": "ZRC30SA",
+    "spring_qty": 8,
+    "air_pressure_bar": {
+      "3": {"start": 860, "end": 497},
+      "4": {"start": 1444, "end": 1081},
+      "5": {"start": 2029, "end": 1666},
+      "6": {"start": 2614, "end": 2252},
+      "7": {"start": 3199, "end": 2836}
+    },
+    "spring_output": {"start": 1258, "end": 895},
+    "price_inr": 140512.00,
+    "price_usd": 1673.00
+  },
+  {
+    "model": "ZRC30SA",
+    "spring_qty": 9,
+    "air_pressure_bar": {
+      "4": {"start": 1332, "end": 923},
+      "5": {"start": 1917, "end": 1509},
+      "6": {"start": 2502, "end": 2094},
+      "7": {"start": 3087, "end": 2678}
+    },
+    "spring_output": {"start": 1416, "end": 1007},
+    "price_inr": 140512.00,
+    "price_usd": 1673.00
+  },
+  {
+    "model": "ZRC30SA",
+    "spring_qty": 10,
+    "air_pressure_bar": {
+      "4": {"start": 1220, "end": 767},
+      "5": {"start": 1805, "end": 1352},
+      "6": {"start": 2390, "end": 1937},
+      "7": {"start": 2974, "end": 2521},
+      "8": {"start": 3560, "end": 3107}
+    },
+    "spring_output": {"start": 1572, "end": 1119},
+    "price_inr": 140512.00,
+    "price_usd": 1673.00
+  },
+  {
+    "model": "ZRC30SA",
+    "spring_qty": 11,
+    "air_pressure_bar": {
+      "5": {"start": 1693, "end": 1197},
+      "6": {"start": 2278, "end": 1779},
+      "7": {"start": 2862, "end": 2364},
+      "8": {"start": 3448, "end": 2949}
+    },
+    "spring_output": {"start": 1730, "end": 1231},
+    "price_inr": 140512.00,
+    "price_usd": 1673.00
+  },
+  {
+    "model": "ZRC30SA",
+    "spring_qty": 12,
+    "air_pressure_bar": {
+      "5": {"start": 1582, "end": 1037},
+      "6": {"start": 2167, "end": 1623},
+      "7": {"start": 2751, "end": 2207},
+      "8": {"start": 3336, "end": 2792}
+    },
+    "spring_output": {"start": 1887, "end": 1342},
+    "price_inr": 140512.00,
+    "price_usd": 1673.00
+  },
+
+  {
+    "model": "ZRC32SA",
+    "spring_qty": 5,
+    "air_pressure_bar": {
+      "2.5": {"start": 1097, "end": 729}
+    },
+    "spring_output": {"start": 1061, "end": 730},
+    "price_inr": 234825.00,
+    "price_usd": 2796.00
+  },
+  {
+    "model": "ZRC32SA",
+    "spring_qty": 6,
+    "air_pressure_bar": {
+      "2.5": {"start": 935, "end": 494},
+      "3": {"start": 1316, "end": 875}
+    },
+    "spring_output": {"start": 1273, "end": 876},
+    "price_inr": 234825.00,
+    "price_usd": 2796.00
+  },
+  {
+    "model": "ZRC32SA",
+    "spring_qty": 7,
+    "air_pressure_bar": {
+      "2.5": {"start": 772, "end": 258},
+      "3": {"start": 1153, "end": 639},
+      "4": {"start": 1916, "end": 1402}
+    },
+    "spring_output": {"start": 1485, "end": 1022},
+    "price_inr": 234825.00,
+    "price_usd": 2796.00
+  },
+  {
+    "model": "ZRC32SA",
+    "spring_qty": 8,
+    "air_pressure_bar": {
+      "3": {"start": 991, "end": 403},
+      "4": {"start": 1754, "end": 1166},
+      "5": {"start": 2517, "end": 1929}
+    },
+    "spring_output": {"start": 1697, "end": 1168},
+    "price_inr": 234825.00,
+    "price_usd": 2796.00
+  },
+  {
+    "model": "ZRC32SA",
+    "spring_qty": 9,
+    "air_pressure_bar": {
+      "4": {"start": 1592, "end": 930},
+      "5": {"start": 2335, "end": 1693},
+      "6": {"start": 3118, "end": 2456}
+    },
+    "spring_output": {"start": 1909, "end": 1314},
+    "price_inr": 234825.00,
+    "price_usd": 2796.00
+  },
+  {
+    "model": "ZRC32SA",
+    "spring_qty": 10,
+    "air_pressure_bar": {
+      "4": {"start": 1430, "end": 695},
+      "5": {"start": 2193, "end": 1458},
+      "6": {"start": 2956, "end": 2221},
+      "7": {"start": 3719, "end": 2984},
+      "8": {"start": 4482, "end": 3747}
+    },
+    "spring_output": {"start": 2122, "end": 1460},
+    "price_inr": 234825.00,
+    "price_usd": 2796.00
+  },
+  {
+    "model": "ZRC32SA",
+    "spring_qty": 11,
+    "air_pressure_bar": {
+      "5": {"start": 2030, "end": 1222},
+      "6": {"start": 2793, "end": 1985},
+      "7": {"start": 3556, "end": 2748},
+      "8": {"start": 4319, "end": 3511}
+    },
+    "spring_output": {"start": 2334, "end": 1606},
+    "price_inr": 234825.00,
+    "price_usd": 2796.00
+  },
+  {
+    "model": "ZRC32SA",
+    "spring_qty": 12,
+    "air_pressure_bar": {
+      "5": {"start": 1868, "end": 986},
+      "6": {"start": 2631, "end": 1749},
+      "7": {"start": 3394, "end": 2512},
+      "8": {"start": 4157, "end": 3275}
+    },
+    "spring_output": {"start": 2546, "end": 1752},
+    "price_inr": 234825.00,
+    "price_usd": 2796.00
+  },
+  {
+    "model": "ZRC34SA",
+    "spring_qty": 5,
+    "air_pressure_bar": {
+      "2.5": {"start": 1553, "end": 964}
+    },
+    "spring_output": {"start": 1702, "end": 1173},
+    "price_inr": 314287.00,
+    "price_usd": 3742.00
+  },
+  {
+    "model": "ZRC34SA",
+    "spring_qty": 6,
+    "air_pressure_bar": {
+      "2.5": {"start": 1292, "end": 586},
+      "3": {"start": 1863, "end": 1157}
+    },
+    "spring_output": {"start": 2043, "end": 1408},
+    "price_inr": 314287.00,
+    "price_usd": 3742.00
+  },
+  {
+    "model": "ZRC34SA",
+    "spring_qty": 7,
+    "air_pressure_bar": {
+      "2.5": {"start": 1031, "end": 208},
+      "3": {"start": 1602, "end": 779},
+      "4": {"start": 2745, "end": 1922}
+    },
+    "spring_output": {"start": 2383, "end": 1640},
+    "price_inr": 314287.00,
+    "price_usd": 3742.00
+  },
+  {
+    "model": "ZRC34SA",
+    "spring_qty": 8,
+    "air_pressure_bar": {
+      "3": {"start": 1341, "end": 401},
+      "4": {"start": 2484, "end": 1544},
+      "5": {"start": 3626, "end": 2686}
+    },
+    "spring_output": {"start": 2724, "end": 1877},
+    "price_inr": 314287.00,
+    "price_usd": 3742.00
+  },
+  {
+    "model": "ZRC34SA",
+    "spring_qty": 9,
+    "air_pressure_bar": {
+      "4": {"start": 2224, "end": 1165},
+      "5": {"start": 3366, "end": 2307},
+      "6": {"start": 4508, "end": 3449}
+    },
+    "spring_output": {"start": 3064, "end": 2112},
+    "price_inr": 314287.00,
+    "price_usd": 3742.00
+  },
+  {
+    "model": "ZRC34SA",
+    "spring_qty": 10,
+    "air_pressure_bar": {
+      "4": {"start": 1963, "end": 787},
+      "5": {"start": 3105, "end": 1929},
+      "6": {"start": 4247, "end": 3071},
+      "7": {"start": 5390, "end": 4214},
+      "8": {"start": 6532, "end": 5356}
+    },
+    "spring_output": {"start": 3405, "end": 2346},
+    "price_inr": 314287.00,
+    "price_usd": 3742.00
+  },
+  {
+    "model": "ZRC34SA",
+    "spring_qty": 11,
+    "air_pressure_bar": {
+      "5": {"start": 2844, "end": 1551},
+      "6": {"start": 3986, "end": 2693},
+      "7": {"start": 5129, "end": 3836},
+      "8": {"start": 6271, "end": 4978}
+    },
+    "spring_output": {"start": 3745, "end": 2581},
+    "price_inr": 314287.00,
+    "price_usd": 3742.00
+  },
+  {
+    "model": "ZRC34SA",
+    "spring_qty": 12,
+    "air_pressure_bar": {
+      "5": {"start": 2584, "end": 1172},
+      "6": {"start": 3726, "end": 2314},
+      "7": {"start": 4869, "end": 3457},
+      "8": {"start": 6011, "end": 4599}
+    },
+    "spring_output": {"start": 4086, "end": 2816},
+    "price_inr": 314287.00,
+    "price_usd": 3742.00
+  },
+  {
+    "model": "ZRC36SA",
+    "spring_qty": 7,
+    "air_pressure_bar": {
+      "2.5": {"start": 2028, "end": 869}
+    },
+    "spring_output": {"start": 2880, "end": 1873},
+    "price_inr": 495214.00,
+    "price_usd": 5896.00
+  },
+  {
+    "model": "ZRC36SA",
+    "spring_qty": 8,
+    "air_pressure_bar": {
+      "2.5": {"start": 1736, "end": 411},
+      "3": {"start": 2550, "end": 1225}
+    },
+    "spring_output": {"start": 3292, "end": 2100},
+    "price_inr": 495214.00,
+    "price_usd": 5896.00
+  },
+  {
+    "model": "ZRC36SA",
+    "spring_qty": 9,
+    "air_pressure_bar": {
+      "3": {"start": 2259, "end": 768},
+      "4": {"start": 3887, "end": 2396}
+    },
+    "spring_output": {"start": 3703, "end": 2362},
+    "price_inr": 495214.00,
+    "price_usd": 5896.00
+  },
+  {
+    "model": "ZRC36SA",
+    "spring_qty": 10,
+    "air_pressure_bar": {
+      "3": {"start": 1967, "end": 311},
+      "4": {"start": 3595, "end": 1939},
+      "5": {"start": 5223, "end": 3567}
+    },
+    "spring_output": {"start": 4115, "end": 2624},
+    "price_inr": 495214.00,
+    "price_usd": 5896.00
+  },
+  {
+    "model": "ZRC36SA",
+    "spring_qty": 11,
+    "air_pressure_bar": {
+      "4": {"start": 3303, "end": 1482},
+      "5": {"start": 4931, "end": 3110},
+      "6": {"start": 6559, "end": 4738}
+    },
+    "spring_output": {"start": 4526, "end": 2887},
+    "price_inr": 495214.00,
+    "price_usd": 5896.00
+  },
+  {
+    "model": "ZRC36SA",
+    "spring_qty": 12,
+    "air_pressure_bar": {
+      "4": {"start": 3012, "end": 1025},
+      "5": {"start": 4640, "end": 2653},
+      "6": {"start": 6268, "end": 4281},
+      "7": {"start": 7895, "end": 5908},
+      "8": {"start": 9523, "end": 7536}
+    },
+    "spring_output": {"start": 4938, "end": 3149},
+    "price_inr": 495214.00,
+    "price_usd": 5896.00
+  },
+  {
+    "model": "ZRC36SA",
+    "spring_qty": 13,
+    "air_pressure_bar": {
+      "5": {"start": 4348, "end": 2195},
+      "6": {"start": 5976, "end": 3823},
+      "7": {"start": 7603, "end": 5450},
+      "8": {"start": 9231, "end": 7078}
+    },
+    "spring_output": {"start": 5349, "end": 3412},
+    "price_inr": 495214.00,
+    "price_usd": 5896.00
+  },
+  {
+    "model": "ZRC36SA",
+    "spring_qty": 14,
+    "air_pressure_bar": {
+      "5": {"start": 4057, "end": 1738},
+      "6": {"start": 5685, "end": 3366},
+      "7": {"start": 7312, "end": 4993},
+      "8": {"start": 8940, "end": 6621}
+    },
+    "spring_output": {"start": 5761, "end": 3674},
+    "price_inr": 495214.00,
+    "price_usd": 5896.00
+  },
+  {
+    "model": "ZRC36SA",
+    "spring_qty": 15,
+    "air_pressure_bar": {
+      "5": {"start": 3765, "end": 1281},
+      "6": {"start": 5393, "end": 2909},
+      "7": {"start": 7020, "end": 4536},
+      "8": {"start": 8648, "end": 6164}
+    },
+    "spring_output": {"start": 6172, "end": 3937},
+    "price_inr": 495214.00,
+    "price_usd": 5896.00
+  },
+  {
+    "model": "ZRC36SA",
+    "spring_qty": 16,
+    "air_pressure_bar": {
+      "6": {"start": 5101, "end": 2452},
+      "7": {"start": 6728, "end": 4079},
+      "8": {"start": 8356, "end": 5707}
+    },
+    "spring_output": {"start": 6584, "end": 4199},
+    "price_inr": 495214.00,
+    "price_usd": 5896.00
+  }
+]

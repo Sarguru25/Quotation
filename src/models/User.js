@@ -21,15 +21,52 @@ const UserSchema = new mongoose.Schema({
     minlength: [6, 'Password should be at least 6 characters long'],
   },
   role: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Role',
+    required: false,
+  },
+  roleString: {
     type: String,
-    enum: ['Admin', 'Manager', 'Employee'],
-    default: 'Employee',
+    enum: ['Admin', 'Manager', 'Executive', 'Viewer', 'Employee'],
+    default: 'Executive',
+  },
+  permissions: [{
+    type: String,
+  }],
+  department: {
+    type: String,
+    default: 'General',
+  },
+  reportingManager: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
   },
   managerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     default: null,
   },
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
+  lastLogin: {
+    type: Date,
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  updatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  }
 }, { timestamps: true });
 
-export default mongoose.models.User || mongoose.model('User', UserSchema);
+// Clear the mongoose model cache in development to ensure schema updates apply
+if (mongoose.models.User) {
+  delete mongoose.models.User;
+}
+
+export default mongoose.model('User', UserSchema);

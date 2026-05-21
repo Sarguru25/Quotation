@@ -10,22 +10,38 @@ import {
   UserCircle,
   LogOut,
   ChevronRight,
-  KeyRound,
+  ListPlus,
+  ClipboardList,
+  ShieldAlert,
+  FilePlus,
+  ReceiptIndianRupee
 } from "lucide-react";
+import { PERMISSIONS, hasPermission } from "@/lib/rbac/permissions";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
 
-  const navLinks = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Quotations", href: "/dashboard/quotations", icon: FileText },
-    { name: "Customers", href: "/dashboard/customers", icon: Users },
+  const userPermissions = session?.user?.permissions || [];
+  const isAdmin = session?.user?.role === "Admin";
+
+  const allLinks = [
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, requiresAny: [] },
+    { name: "Quotations", href: "/dashboard/quotations", icon: FileText, requiresAny: [PERMISSIONS.QUOTATION.VIEW] },
+    { name: "Customers", href: "/dashboard/customers", icon: Users, requiresAny: [PERMISSIONS.CUSTOMER.VIEW] },
+    { name: "Custom Quote", href: "/dashboard/custom", icon:FilePlus, requiresAny: [PERMISSIONS.PRODUCT.VIEW] },
+    { name: "Items", href: "/dashboard/items", icon: ListPlus, requiresAny: [PERMISSIONS.PRODUCT.VIEW] },
+    { name: "Users", href: "/dashboard/users", icon: UserCircle, requiresAny: [PERMISSIONS.USER.VIEW] },
+    { name: "Roles", href: "/dashboard/roles", icon: ShieldAlert, requiresAny: [PERMISSIONS.ROLE.MANAGE] },
+    { name: "Price Data", href: "/dashboard/priceData", icon: ReceiptIndianRupee},
   ];
 
-  if (session?.user?.role === "Admin") {
-    navLinks.push({ name: "Users", href: "/dashboard/users", icon: UserCircle });
-  }
+  // Filter links based on permissions
+  const navLinks = allLinks.filter(link => {
+    if (isAdmin) return true;
+    if (link.requiresAny.length === 0) return true;
+    return link.requiresAny.some(perm => hasPermission(userPermissions, perm));
+  });
 
   const initials = session?.user?.name
     ?.split(" ")
@@ -44,8 +60,8 @@ export default function Sidebar() {
               <FileText size={16} className="text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white leading-none">QuotFlow</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Powered by Zoho</p>
+              <h2 className="text-lg font-bold text-white leading-none">QuoteFlow</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Powered by ZOHO</p>
             </div>
           </div>
         </div>
@@ -59,7 +75,7 @@ export default function Sidebar() {
             const Icon = link.icon;
             const isActive =
               pathname === link.href ||
-              (link.href !== "/dashboard" && pathname.startsWith(link.href));
+              (link.href !== "/dashboard" && pathname.startsWith(link.href + "/"));
             return (
               <Link
                 key={link.name}
@@ -82,20 +98,6 @@ export default function Sidebar() {
             );
           })}
         </nav>
-
-        {/* Zoho Login */}
-        {/* <div className="mt-4 px-3">
-          <p className="text-xs text-slate-600 uppercase tracking-wider font-semibold px-3 mb-2">
-            Integrations
-          </p>
-          <a
-            href="/api/zoho/login"
-            className="group flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 transition-all duration-200 border border-dashed border-slate-700 hover:border-amber-500/40"
-          >
-            <KeyRound size={18} className="text-amber-500 group-hover:text-amber-400 transition-colors" />
-            Zoho Login
-          </a>
-        </div> */}
       </div>
 
       {/* Footer */}

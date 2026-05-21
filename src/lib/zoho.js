@@ -136,8 +136,6 @@
 //   return data.access_token;
 // }
 
-import axios from "axios";
-
 let cachedToken = null;
 let tokenExpiry = null;
 
@@ -148,29 +146,39 @@ export async function getZohoAccessToken() {
   }
 
   try {
-    const response = await axios.post(
+    const response = await fetch(
       "https://accounts.zoho.in/oauth/v2/token",
-      null,
       {
-        params: {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
           refresh_token: process.env.ZOHO_REFRESH_TOKEN,
           client_id: process.env.ZOHO_CLIENT_ID,
           client_secret: process.env.ZOHO_CLIENT_SECRET,
           grant_type: "refresh_token",
-        },
+        }),
       }
     );
 
-    cachedToken = response.data.access_token;
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(`Token request failed: ${JSON.stringify(data)}`);
+    }
+
+    cachedToken = data.access_token;
 
     // expires_in is seconds
-    tokenExpiry = Date.now() + response.data.expires_in * 1000;
+    tokenExpiry = Date.now() + data.expires_in * 1000;
 
     console.log("NEW ACCESS TOKEN GENERATED");
 
     return cachedToken;
   } catch (error) {
-    console.error("ACCESS TOKEN ERROR:", error.response?.data);
+    console.error("ACCESS TOKEN ERROR:", error);
     return null;
   }
 }

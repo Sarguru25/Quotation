@@ -1,0 +1,40 @@
+{
+  "double_acting": [
+    { "model": "ZRC2DA", "drawing_no": "ZRC2DA-ACT-ZT-ID-001" },
+    { "model": "ZRC4DA", "drawing_no": "ZRC4DA-ACT-ZT-ID-002" },
+    { "model": "ZRC6DA", "drawing_no": "ZRC6DA-ACT-ZT-ID-003" },
+    { "model": "ZRC8DA", "drawing_no": "ZRC8DA-ACT-ZT-ID-004" },
+    { "model": "ZRC10DA", "drawing_no": "ZRC10DA-ACT-ZT-ID-005" },
+    { "model": "ZRC12DA", "drawing_no": "ZRC12DA-ACT-ZT-ID-006" },
+    { "model": "ZRC14DA", "drawing_no": "ZRC14DA-ACT-ZT-ID-007" },
+    { "model": "ZRC16DA", "drawing_no": "ZRC16DA-ACT-ZT-ID-008" },
+    { "model": "ZRC20DA", "drawing_no": "ZRC20DA-ACT-ZT-ID-009" },
+    { "model": "ZRC22DA", "drawing_no": "ZRC22DA-ACT-ZT-ID-010" },
+    { "model": "ZRC24DA", "drawing_no": "ZRC24DA-ACT-ZT-ID-011" },
+    { "model": "ZRC26DA", "drawing_no": "ZRC26DA-ACT-ZT-ID-012" },
+    { "model": "ZRC28DA", "drawing_no": "ZRC28DA-ACT-ZT-ID-013" },
+    { "model": "ZRC30DA", "drawing_no": "ZRC30DA-ACT-ZT-ID-014" },
+    { "model": "ZRC32DA", "drawing_no": "ZRC32DA-ACT-ZT-ID-015" },
+    { "model": "ZRC34DA", "drawing_no": "ZRC34DA-ACT-ZT-ID-016" },
+    { "model": "ZRC36DA", "drawing_no": "ZRC36DA-ACT-ZT-ID-017" }
+  ],
+  "single_acting": [
+    { "model": "ZRC2SA", "drawing_no": "ZRC2SA-ACT-ZT-ID-001" },
+    { "model": "ZRC4SA", "drawing_no": "ZRC4SA-ACT-ZT-ID-002" },
+    { "model": "ZRC6SA", "drawing_no": "ZRC6SA-ACT-ZT-ID-003" },
+    { "model": "ZRC8SA", "drawing_no": "ZRC8SA-ACT-ZT-ID-004" },
+    { "model": "ZRC10SA", "drawing_no": "ZRC10SA-ACT-ZT-ID-005" },
+    { "model": "ZRC12SA", "drawing_no": "ZRC12SA-ACT-ZT-ID-006" },
+    { "model": "ZRC14SA", "drawing_no": "ZRC14SA-ACT-ZT-ID-007" },
+    { "model": "ZRC16SA", "drawing_no": "ZRC16SA-ACT-ZT-ID-008" },
+    { "model": "ZRC20SA", "drawing_no": "ZRC20SA-ACT-ZT-ID-009" },
+    { "model": "ZRC22SA", "drawing_no": "ZRC22SA-ACT-ZT-ID-010" },
+    { "model": "ZRC24SA", "drawing_no": "ZRC24SA-ACT-ZT-ID-011" },
+    { "model": "ZRC26SA", "drawing_no": "ZRC26SA-ACT-ZT-ID-012" },
+    { "model": "ZRC28SA", "drawing_no": "ZRC28SA-ACT-ZT-ID-013" },
+    { "model": "ZRC30SA", "drawing_no": "ZRC30SA-ACT-ZT-ID-014" },
+    { "model": "ZRC32SA", "drawing_no": "ZRC32SA-ACT-ZT-ID-015" },
+    { "model": "ZRC34SA", "drawing_no": "ZRC34SA-ACT-ZT-ID-016" },
+    { "model": "ZRC36SA", "drawing_no": "ZRC36SA-ACT-ZT-ID-017" }
+  ]
+}

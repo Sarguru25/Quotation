@@ -1,12 +1,29 @@
-import { fetchZohoQuotations } from "@/lib/zoho";
+import { getZohoAccessToken } from "@/lib/zoho";
 import dbConnect from "@/lib/db";
 import Quotation from "@/models/Quotation";
+import axios from "axios";
+
+const ZOHO_ORGANIZATION_ID = process.env.ZOHO_ORGANIZATION_ID;
 
 export async function GET() {
   try {
     await dbConnect();
 
-    const quotes = await fetchZohoQuotations();
+    const accessToken = await getZohoAccessToken();
+
+    const response = await axios.get(
+      "https://www.zohoapis.in/books/v3/estimates",
+      {
+        headers: {
+          Authorization: `Zoho-oauthtoken ${accessToken}`,
+        },
+        params: {
+          organization_id: ZOHO_ORGANIZATION_ID,
+        },
+      }
+    );
+
+    const quotes = response.data.estimates || [];
 
     for (const q of quotes) {
       await Quotation.updateOne(

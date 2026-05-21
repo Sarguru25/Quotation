@@ -1,21 +1,27 @@
-// src/app/api/zoho/quotes/create/route.js
-
 import { NextResponse } from "next/server";
-import axios from "axios";
-import { getZohoAccessToken } from "@/lib/zoho";
-
-const ZOHO_ORGANIZATION_ID = process.env.ZOHO_ORGANIZATION_ID;
+import { requirePermission } from "@/lib/rbac/auth";
+import { PERMISSIONS } from "@/lib/rbac/permissions";
+import { createQuotation } from "@/lib/zoho/quotations";
 
 export async function POST(req) {
   try {
-    const body = await req.json();
-    const accessToken = await getZohoAccessToken();
+    // 1. Authorization
+    await requirePermission(PERMISSIONS.QUOTATION.CREATE);
 
-    const line_items = body.line_items.map((item) => ({
-      name: item.name,
-      quantity: Number(item.quantity),
-      rate: Number(item.rate),
-    }));
+    // 2. Extract and format data
+    const body = await req.json();
+
+    const line_items = body.line_items.map((item) => {
+      const payloadItem = {
+        name: item.name,
+        quantity: Number(item.quantity),
+        rate: Number(item.rate),
+      };
+      if (item.item_id) payloadItem.item_id = item.item_id;
+      if (item.description) payloadItem.description = item.description;
+      if (item.tax_id) payloadItem.tax_id = item.tax_id;
+      return payloadItem;
+    });
 
     const quotePayload = {
       customer_id: body.customer_id,
@@ -25,35 +31,31 @@ export async function POST(req) {
       subject: body.subject,
       notes: body.notes,
       terms: body.terms,
+      discount: `${Number(body.discount_percent) || 0}%`,
+      discount_type: "entity_level",
+      is_discount_before_tax: true,
+      adjustment: Number(body.adjustment) || 0,
       line_items,
     };
 
-    const quoteResponse = await axios.post(
-      `https://www.zohoapis.in/books/v3/estimates`,
-      quotePayload,
-      {
-        headers: {
-          Authorization: `Zoho-oauthtoken ${accessToken}`,
-        },
-        params: {
-          organization_id: ZOHO_ORGANIZATION_ID,
-        },
-      }
-    );
+    // 3. Service Layer call
+    const data = await createQuotation(quotePayload);
 
+    // 4. Return
     return NextResponse.json({
       success: true,
-      data: quoteResponse.data,
+      data,
     });
   } catch (error) {
-    console.log("CREATE QUOTE ERROR:", error.response?.data || error.message);
+    if (error.message?.includes("Forbidden") || error.message?.includes("Unauthorized")) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 403 });
+    }
+
+    console.error("[API] POST Quote Error:", error.message || error);
 
     return NextResponse.json(
-      {
-        success: false,
-        error: error.response?.data || error.message,
-      },
-      { status: 500 }
+      { success: false, error: error.message || "Failed to create quotation" },
+      { status: error.status || 500 }
     );
   }
 }

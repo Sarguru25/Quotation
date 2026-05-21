@@ -1,17 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  RefreshCcw,
-  Plus,
-  X,
-  Trash2,
-  Edit,
-  FileText,
-  Search,
-  ChevronRight,
-  AlertCircle,
-} from "lucide-react";
+import { RefreshCcw, Plus, X, Trash2, Edit, FileText, Search, ChevronRight, AlertCircle, ListPlus } from "lucide-react";  
 import Link from "next/link";
 
 const STATUS_STYLES = {
@@ -47,10 +37,21 @@ function TextAreaField({ label, ...props }) {
   );
 }
 
+import { useSession } from "next-auth/react";
+import { PERMISSIONS, hasPermission } from "@/lib/rbac/permissions";
+
 export default function QuotationsPage() {
+  const { data: session } = useSession();
+  const userPermissions = session?.user?.permissions || [];
+  const canCreate = hasPermission(userPermissions, PERMISSIONS.QUOTATION.CREATE);
+  const canEdit = hasPermission(userPermissions, PERMISSIONS.QUOTATION.EDIT);
+  const canDelete = hasPermission(userPermissions, PERMISSIONS.QUOTATION.DELETE);
+
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [customers, setCustomers] = useState([]);
+  const [items, setItems] = useState([]);
+  const [taxes, setTaxes] = useState([]);
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
@@ -67,7 +68,9 @@ export default function QuotationsPage() {
     expiry_date: "",
     notes: "",
     terms: "",
-    line_items: [{ name: "", quantity: 1, rate: 0 }],
+    discount_percent: 0,
+    adjustment: 0,
+    line_items: [{ item_id: "", name: "", description: "", quantity: 1, rate: 0, tax_id: "" }],
   };
 
   const [form, setForm] = useState(initialFormState);
@@ -101,10 +104,61 @@ export default function QuotationsPage() {
     }
   }
 
+  async function fetchItems() {
+    try {
+      const res = await fetch("/api/zoho/items", { cache: "no-store" });
+      const data = await res.json();
+      setItems(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to fetch items:", err);
+    }
+  }
+
+  async function fetchTaxes() {
+    try {
+      const res = await fetch("/api/zoho/taxes", { cache: "no-store" });
+      const data = await res.json();
+      setTaxes(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to fetch taxes:", err);
+    }
+  }
+
+  // Helper to get tax percentage from tax_id
+  function getTaxPercentage(taxId) {
+    if (!taxId) return 0;
+    const tax = taxes.find(t => t.tax_id === taxId);
+    return tax ? tax.tax_percentage : 0;
+  }
+
   useEffect(() => {
     fetchQuotes();
     fetchCustomers();
-  }, []);
+    fetchItems();
+    fetchTaxes();
+
+    // Check for pending items from Actuators conversion
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("new") === "true") {
+      const pendingItems = localStorage.getItem("pending_quotation_items");
+      if (pendingItems) {
+        try {
+          const items = JSON.parse(pendingItems);
+          setForm(prev => ({
+            ...prev,
+            line_items: items
+          }));
+          if (canCreate) {
+             setOpen(true);
+          }
+          localStorage.removeItem("pending_quotation_items");
+          window.history.replaceState({}, '', '/dashboard/quotations');
+        } catch (e) {
+          console.error("Failed to load pending quotation items:", e);
+        }
+      }
+    }
+  }, [canCreate]);
 
   const formatDate = (date) => {
     if (!date) return "—";
@@ -122,14 +176,14 @@ export default function QuotationsPage() {
 
   function handleItemChange(index, field, value) {
     const updated = [...form.line_items];
-    updated[index][field] = field === "quantity" || field === "rate" ? Number(value) : value;
+    updated[index][field] = (field === "quantity" || field === "rate") ? Number(value) : value;
     setForm((prev) => ({ ...prev, line_items: updated }));
   }
 
   function addRow() {
     setForm((prev) => ({
       ...prev,
-      line_items: [...prev.line_items, { name: "", quantity: 1, rate: 0 }],
+      line_items: [...prev.line_items, { item_id: "", name: "", description: "", quantity: 1, rate: 0, tax_id: "" }],
     }));
   }
 
@@ -140,7 +194,19 @@ export default function QuotationsPage() {
     }));
   }
 
-  const total = form.line_items.reduce((acc, item) => acc + item.quantity * item.rate, 0);
+  // Computed totals
+  const subTotal = form.line_items.reduce((acc, item) => acc + item.quantity * item.rate, 0);
+  const discountPercent = parseFloat(form.discount_percent) || 0;
+  const discountAmount = (subTotal * discountPercent) / 100;
+  const afterDiscount = subTotal - discountAmount;
+  const taxTotal = form.line_items.reduce((acc, item) => {
+    const lineAmount = item.quantity * item.rate;
+    const taxPct = getTaxPercentage(item.tax_id);
+    const lineTax = (lineAmount * taxPct) / 100;
+    return acc + lineTax;
+  }, 0);
+  const adjustment = parseFloat(form.adjustment) || 0;
+  const total = afterDiscount + taxTotal + adjustment;
 
   async function handleSaveQuotation() {
     if (!form.customer_id) { showToast("Please select a customer", "error"); return; }
@@ -197,13 +263,17 @@ export default function QuotationsPage() {
           expiry_date: fullQuote.expiry_date || "",
           notes: fullQuote.notes || "",
           terms: fullQuote.terms || "",
+          discount_percent: fullQuote.discount || 0,
+          adjustment: fullQuote.adjustment || 0,
           line_items: fullQuote.line_items?.map((item) => ({
             line_item_id: item.line_item_id,
             item_id: item.item_id,
             name: item.name || "",
+            description: item.description || "",
             quantity: item.quantity || 1,
             rate: item.rate || 0,
-          })) || [{ name: "", quantity: 1, rate: 0 }],
+            tax_id: item.tax_id || "",
+          })) || [{ item_id: "", name: "", description: "", quantity: 1, rate: 0, tax_id: "" }],
         });
       }
     } catch (error) { console.error(error); }
@@ -252,13 +322,21 @@ export default function QuotationsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={() => { setEditingId(null); setForm(initialFormState); setOpen(true); }}
-            className="btn-press flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm shadow-indigo-200 transition-colors"
-          >
-            <Plus size={16} />
-            New Quotation
-          </button>
+          {canCreate && (
+            <Link className="btn-press flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm shadow-indigo-200 transition-colors" href="/dashboard/actuators">
+              <ListPlus size={16} />
+              Custom Items
+            </Link>
+          )}
+          {canCreate && (
+            <button
+              onClick={() => { setEditingId(null); setForm(initialFormState); setOpen(true); }}
+              className="btn-press flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm shadow-indigo-200 transition-colors"
+            >
+              <Plus size={16} />
+              New Quotation
+            </button>
+          )}
           <button
             onClick={fetchQuotes}
             className="btn-press flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
@@ -325,20 +403,24 @@ export default function QuotationsPage() {
                     </td>
                     <td className="px-5 py-4 text-center">
                       <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => openEditModal(q)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                          title="Edit"
-                        >
-                          <Edit size={15} />
-                        </button>
-                        <button
-                          onClick={() => deleteQuotation(q.estimate_id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                        {canEdit && (
+                          <button
+                            onClick={() => openEditModal(q)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                            title="Edit"
+                          >
+                            <Edit size={15} />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            onClick={() => deleteQuotation(q.estimate_id)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -357,141 +439,261 @@ export default function QuotationsPage() {
         </div>
       </div>
 
-      {/* ========== MODAL ========== */}
+      {/* ========== FULL PAGE OVERLAY (ZOHO STYLE) ========== */}
       {open && (
-        <div className="modal-backdrop fixed inset-0 bg-slate-900/60 flex justify-center items-start overflow-auto z-50 p-4 md:p-10">
-          <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-100 my-4">
-            {/* Modal Header */}
-            <div className="flex justify-between items-center px-7 py-5 border-b border-slate-100">
-              <div>
-                <h2 className="text-xl font-bold text-slate-900">
-                  {editingId ? "Edit Quotation" : "New Quotation"}
+        <div className="fixed top-0 bottom-0 right-0 left-64 bg-gray-50 flex justify-center items-start overflow-auto z-[50]">
+          <div className="bg-white w-full min-h-full relative">
+            {/* Header */}
+            <div className="flex justify-between items-center px-8 py-4 border-b border-gray-200 sticky top-0 bg-white z-10 shadow-sm">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-gray-600" />
+                <h2 className="text-xl font-semibold text-gray-800 tracking-tight">
+                  {editingId ? "Edit Estimate" : "New Estimate"}
                 </h2>
-                <p className="text-sm text-slate-400 mt-0.5">
-                  {editingId ? "Update the quotation details below" : "Fill in the details to create a new quotation"}
-                </p>
               </div>
               <button
                 onClick={() => setOpen(false)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                className="p-1.5 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
               >
-                <X size={20} />
+                <X size={24} />
               </button>
             </div>
 
-            <div className="px-7 py-6 space-y-6">
-              {/* Customer Dropdown */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Customer *</label>
-                <select
-                  value={form.customer_id}
-                  onChange={(e) => {
-                    const selected = customers.find((c) => c.contact_id === e.target.value);
-                    setForm((prev) => ({
-                      ...prev,
-                      customer_id: e.target.value,
-                      customer_name: selected?.contact_name || "",
-                    }));
-                  }}
-                  className="input-field w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 bg-slate-50 focus:bg-white"
-                >
-                  <option value="">— Select a customer —</option>
-                  {customers.map((c) => (
-                    <option key={c.contact_id} value={c.contact_id}>
-                      {c.contact_name}{c.company_name && c.company_name !== c.contact_name ? ` (${c.company_name})` : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Meta fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <InputField label="Reference Number" type="text" name="reference_number" value={form.reference_number} onChange={handleChange} placeholder="e.g. REF-001" />
-                <InputField label="Quote Date" type="date" name="date" value={form.date} onChange={handleChange} />
-                <InputField label="Expiry Date" type="date" name="expiry_date" value={form.expiry_date} onChange={handleChange} />
-                <InputField label="Subject" type="text" name="subject" value={form.subject} onChange={handleChange} placeholder="e.g. Sales Quote for XYZ" />
-              </div>
-
-              {/* Line Items */}
-              <div>
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="text-sm font-semibold text-slate-800">Line Items</h3>
-                  <button
-                    onClick={addRow}
-                    className="flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 text-sm font-medium bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors"
+            <div className="max-w-[1200px] mx-auto py-8 px-6 pb-40">
+              {/* Form Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-y-6 gap-x-8 mb-12">
+                {/* Customer */}
+                <div className="md:col-span-3 flex items-center md:justify-end">
+                  <label className="text-sm font-medium text-red-500">Customer Name*</label>
+                </div>
+                <div className="md:col-span-6 flex items-center">
+                  <select
+                    value={form.customer_id}
+                    onChange={(e) => {
+                      const selected = customers.find((c) => c.contact_id === e.target.value);
+                      setForm((prev) => ({
+                        ...prev,
+                        customer_id: e.target.value,
+                        customer_name: selected?.contact_name || "",
+                      }));
+                    }}
+                    className="w-full border border-gray-300 rounded-l-md text-sm px-3 py-2 text-gray-700 bg-white focus:border-blue-500 outline-none"
                   >
-                    <Plus size={14} /> Add Row
+                    <option value="">Select or add a customer</option>
+                    {customers.map((c) => (
+                      <option key={c.contact_id} value={c.contact_id}>
+                        {c.contact_name}{c.company_name && c.company_name !== c.contact_name ? ` (${c.company_name})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <button className="bg-blue-500 hover:bg-blue-600 p-2 rounded-r-md text-white transition-colors">
+                    <Search size={18}/>
                   </button>
                 </div>
+                <div className="md:col-span-3"></div>
 
-                <div className="border border-slate-100 rounded-xl overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead className="bg-slate-50">
-                      <tr>
-                        <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Item Name</th>
-                        <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wider w-24">Qty</th>
-                        <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wider w-32">Rate (₹)</th>
-                        <th className="text-right px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wider w-32">Amount</th>
-                        <th className="w-10" />
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {form.line_items.map((item, index) => (
-                        <tr key={index}>
-                          <td className="px-3 py-2">
-                            <input type="text" value={item.name} onChange={(e) => handleItemChange(index, "name", e.target.value)}
-                              className="input-field w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:bg-white" placeholder="Item description" />
-                          </td>
-                          <td className="px-3 py-2">
-                            <input type="number" value={item.quantity} onChange={(e) => handleItemChange(index, "quantity", e.target.value)}
-                              className="input-field w-20 border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:bg-white" min={1} />
-                          </td>
-                          <td className="px-3 py-2">
-                            <input type="number" value={item.rate} onChange={(e) => handleItemChange(index, "rate", e.target.value)}
-                              className="input-field w-28 border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 focus:bg-white" min={0} />
-                          </td>
-                          <td className="px-4 py-2 text-right font-semibold text-slate-700">
-                            {formatCurrency(item.quantity * item.rate)}
-                          </td>
-                          <td className="px-2 py-2 text-center">
-                            <button onClick={() => removeRow(index)} className="p-1 text-slate-300 hover:text-red-500 transition-colors">
-                              <X size={14} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                {/* Estimate# */}
+                <div className="md:col-span-3 flex items-center md:justify-end">
+                  <label className="text-sm font-medium text-red-500">Estimate#*</label>
                 </div>
+                <div className="md:col-span-6 flex gap-3">
+                   <input type="text" value="Default Transaction Series" readOnly className="w-1/2 border border-gray-300 rounded-md text-sm px-3 py-2 bg-gray-50 text-gray-500 outline-none" />
+                   <input type="text" value={form.estimate_number || ""} onChange={(e) => setForm({...form, estimate_number: e.target.value})} className="w-1/2 border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500" placeholder="e.g. EST-0001" />
+                </div>
+                <div className="md:col-span-3"></div>
 
-                {/* Total */}
-                <div className="flex justify-end mt-3">
-                  <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-6 py-3 flex items-center gap-6">
-                    <span className="text-sm text-slate-500">Total</span>
-                    <span className="text-xl font-bold text-indigo-700">{formatCurrency(total)}</span>
+                {/* Reference# */}
+                <div className="md:col-span-3 flex items-center md:justify-end"><label className="text-sm font-medium text-gray-700">Reference#</label></div>
+                <div className="md:col-span-6"><input type="text" name="reference_number" value={form.reference_number} onChange={handleChange} className="w-full border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500" /></div>
+                <div className="md:col-span-3"></div>
+
+                {/* Estimate Date & Expiry */}
+                <div className="md:col-span-3 flex items-center md:justify-end"><label className="text-sm font-medium text-red-500">Estimate Date*</label></div>
+                <div className="md:col-span-6 flex gap-6 items-center">
+                   <input type="date" name="date" value={form.date} onChange={handleChange} className="flex-1 border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500" />
+                   <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Expiry Date</label>
+                   <input type="date" name="expiry_date" value={form.expiry_date} onChange={handleChange} className="flex-1 border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500" />
+                </div>
+                <div className="md:col-span-3"></div>
+
+                {/* Divider */}
+                <div className="md:col-span-12 border-t border-gray-100 my-4"></div>
+
+                {/* Additional fields from screenshot: Salesperson, Project Name, Offer Status, etc. */}
+                <div className="md:col-span-3 flex items-center md:justify-end"><label className="text-sm font-medium text-gray-700">Subject</label></div>
+                <div className="md:col-span-6"><input type="text" name="subject" value={form.subject} onChange={handleChange} placeholder="Let your customer know what this Estimate is for" className="w-full border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500" /></div>
+                <div className="md:col-span-3"></div>
+              </div>
+
+              {/* Item Table section */}
+              <div className="mb-6 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                <table className="w-full text-left">
+                  <thead className="bg-gray-50 border-b border-gray-200 text-xs text-gray-500 uppercase tracking-wider">
+                    <tr>
+                      <th className="px-5 py-3.5 font-medium">Item Details</th>
+                      <th className="px-5 py-3.5 font-medium w-32 text-right">Quantity</th>
+                      <th className="px-5 py-3.5 font-medium w-40 text-right">Rate</th>
+                      <th className="px-5 py-3.5 font-medium w-40 text-right">Tax</th>
+                      <th className="px-5 py-3.5 font-medium w-32 text-right">Amount</th>
+                      <th className="px-3 py-3.5 w-12"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {form.line_items.map((item, index) => {
+                      const lineAmount = item.quantity * item.rate;
+                      const lineTaxPct = getTaxPercentage(item.tax_id);
+                      const lineTax = (lineAmount * lineTaxPct) / 100;
+                      return (
+                      <tr key={index} className="hover:bg-gray-50 transition-colors group">
+                        <td className="px-5 py-3 align-top">
+                          {/* Item dropdown */}
+                          <select
+                            value={item.item_id || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              const selectedItem = items.find(i => i.item_id === val);
+                              const updated = [...form.line_items];
+                              if (selectedItem) {
+                                updated[index] = {
+                                  ...updated[index],
+                                  item_id: val,
+                                  name: selectedItem.name,
+                                  description: selectedItem.description || selectedItem.purchase_description || "",
+                                  rate: selectedItem.rate || selectedItem.purchase_rate || 0,
+                                };
+                              } else {
+                                updated[index] = { ...updated[index], item_id: "", name: "", description: "", rate: 0 };
+                              }
+                              setForm(prev => ({ ...prev, line_items: updated }));
+                            }}
+                            className="w-full bg-transparent border border-gray-200 rounded px-2 py-1.5 text-sm outline-none text-gray-800 font-medium focus:border-blue-500 mb-2"
+                          >
+                            <option value="">Select an item from Zoho</option>
+                            {items.map(zohoItem => (
+                              <option key={zohoItem.item_id} value={zohoItem.item_id}>{zohoItem.name}</option>
+                            ))}
+                          </select>
+                          {/* Manual item name */}
+                          <input
+                            type="text"
+                            value={item.name}
+                            onChange={e => handleItemChange(index, "name", e.target.value)}
+                            placeholder="Or type item name manually..."
+                            className="w-full text-sm text-gray-800 bg-transparent border border-gray-200 rounded px-2 py-1.5 outline-none focus:border-blue-500 mb-1"
+                          />
+                          {/* Description */}
+                          <textarea
+                            value={item.description || ""}
+                            onChange={e => handleItemChange(index, "description", e.target.value)}
+                            placeholder="Item description..."
+                            className="w-full text-xs text-gray-500 bg-transparent border-0 focus:ring-0 outline-none resize-y-none mt-1"
+                            rows={4}
+                          />
+                        </td>
+                        <td className="px-5 py-3 align-top">
+                          <input type="number" min="1" value={item.quantity} onChange={e => handleItemChange(index, "quantity", e.target.value)} className="w-full text-right bg-transparent border border-gray-200 rounded px-2 py-1 outline-none text-sm focus:border-blue-500" />
+                        </td>
+                        <td className="px-5 py-3 align-top">
+                          <input type="number" min="0" step="any" value={item.rate} onChange={e => handleItemChange(index, "rate", e.target.value)} className="w-full text-right bg-transparent border border-gray-200 rounded px-2 py-1 outline-none text-sm focus:border-blue-500" />
+                        </td>
+                        <td className="px-5 py-3 align-top">
+                          <select
+                            value={item.tax_id || ""}
+                            onChange={e => handleItemChange(index, "tax_id", e.target.value)}
+                            className="w-full bg-transparent border border-gray-200 rounded px-2 py-1 outline-none text-sm text-gray-700 focus:border-blue-500"
+                          >
+                            <option value="">No Tax</option>
+                            {taxes.map(t => (
+                              <option key={t.tax_id} value={t.tax_id}>{t.tax_name} ({t.tax_percentage}%)</option>
+                            ))}
+                          </select>
+                          {lineTax > 0 && <div className="text-xs text-green-600 mt-1 text-right">+{formatCurrency(lineTax)}</div>}
+                        </td>
+                        <td className="px-5 py-3 align-top text-right text-sm text-gray-800 font-semibold pt-4">
+                          {formatCurrency(lineAmount)}
+                        </td>
+                        <td className="px-3 py-3 align-top text-center pt-4">
+                          <button onClick={() => removeRow(index)} className="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
+                            <X size={18} />
+                          </button>
+                        </td>
+                      </tr>
+                    );})}
+                  </tbody>
+                </table>
+                <div className="bg-gray-50 px-5 py-3 border-t border-gray-200">
+                  <button onClick={addRow} className="text-blue-600 hover:text-blue-800 hover:underline text-sm flex items-center font-medium transition-colors">
+                    <Plus size={15} className="mr-1" /> Add New Row
+                  </button>
+                </div>
+              </div>
+
+              {/* Totals Section */}
+              <div className="flex flex-col md:flex-row justify-between mt-8">
+                <div className="w-full md:w-1/2 pr-8 space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Customer Notes</label>
+                    <textarea value={form.notes} onChange={handleChange} name="notes" rows={4} className="w-full border border-gray-300 rounded-md p-3 text-sm outline-none focus:border-blue-500 text-gray-700 shadow-sm" placeholder="We thank you for your enquiry and look forward for your confirmation of order."></textarea>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Terms & Conditions</label>
+                    <textarea value={form.terms} onChange={handleChange} name="terms" rows={5} className="w-full border border-gray-300 rounded-md p-3 text-sm outline-none focus:border-blue-500 text-gray-700 shadow-sm" placeholder="All our transactions are governed by TruFlow Solutions Pvt Ltd's General Terms and Conditions for Sale..."></textarea>
+                  </div>
+                </div>
+                
+                <div className="w-full md:w-[400px] bg-gray-50 p-6 rounded-lg border border-gray-200 shadow-sm h-fit">
+                  <div className="flex justify-between items-center mb-5 text-sm">
+                    <span className="font-semibold text-gray-700">Sub Total</span>
+                    <span className="font-semibold text-gray-900">{formatCurrency(subTotal)}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-5 text-sm">
+                    <span className="text-gray-600">Discount</span>
+                    <div className="flex items-center gap-3">
+                       <div className="flex items-center border border-gray-300 rounded overflow-hidden bg-white">
+                         <input type="number" min="0" max="100" step="any" value={form.discount_percent} onChange={e => setForm(prev => ({...prev, discount_percent: e.target.value}))} className="w-14 text-right px-2 py-1.5 text-sm outline-none" placeholder="0" />
+                         <span className="bg-gray-100 text-gray-500 px-2 py-1.5 border-l border-gray-300 font-medium">%</span>
+                       </div>
+                       <span className="text-red-500 font-medium w-20 text-right">-{formatCurrency(discountAmount)}</span>
+                    </div>
+                  </div>
+                  {taxTotal > 0 && (
+                    <div className="flex justify-between items-center mb-5 text-sm">
+                      <span className="text-gray-600">Tax</span>
+                      <span className="text-green-600 font-medium">+{formatCurrency(taxTotal)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center mb-5 text-sm">
+                    <span className="text-gray-600">Adjustment</span>
+                    <div className="flex items-center gap-3">
+                       <input type="number" step="any" value={form.adjustment} onChange={e => setForm(prev => ({...prev, adjustment: e.target.value}))} className="w-24 border border-gray-300 rounded text-right px-3 py-1.5 text-sm outline-none bg-white" placeholder="0.00" />
+                       <span className="text-gray-900 font-medium w-20 text-right">{formatCurrency(adjustment)}</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center pt-5 border-t border-gray-200 mt-2">
+                    <span className="text-base font-bold text-gray-900">Total ( ₹ )</span>
+                    <span className="text-xl font-bold text-gray-900">{formatCurrency(total)}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Notes & Terms */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <TextAreaField label="Customer Notes" name="notes" value={form.notes} onChange={handleChange} placeholder="Any notes for the customer..." />
-                <TextAreaField label="Terms & Conditions" name="terms" value={form.terms} onChange={handleChange} placeholder="Payment terms, delivery conditions..." />
-              </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="flex justify-end gap-3 px-7 py-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl">
-              <button onClick={() => setOpen(false)} className="px-5 py-2.5 border border-slate-200 text-slate-600 hover:bg-slate-100 rounded-xl text-sm font-medium transition-colors">
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveQuotation}
-                disabled={saving}
-                className="btn-press px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white rounded-xl text-sm font-medium shadow-sm shadow-indigo-200 transition-colors"
-              >
-                {saving ? "Saving…" : editingId ? "Update Quotation" : "Create Quotation"}
-              </button>
+            {/* Sticky Bottom Bar */}
+            <div className="fixed bottom-0 left-64 right-0 bg-white border-t border-gray-200 px-8 py-4 flex justify-between items-center z-[60] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+               <div className="flex gap-3">
+                  <button className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm font-medium transition-colors shadow-sm">
+                    Save as Draft
+                  </button>
+                  <button onClick={handleSaveQuotation} disabled={saving} className="bg-gray-100 border border-gray-300 text-gray-800 hover:bg-gray-200 px-5 py-2 rounded-md text-sm font-medium transition-colors">
+                    {saving ? "Saving..." : editingId ? "Update Quotation" : "Save and Submit"}
+                  </button>
+                  <button onClick={() => setOpen(false)} className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-5 py-2 rounded-md text-sm font-medium transition-colors">
+                    Cancel
+                  </button>
+               </div>
+               <div className="text-sm text-gray-500 flex items-center gap-2">
+                 PDF Template: <span className="font-medium text-gray-800">Truflow Final</span> <a href="#" className="text-blue-600 hover:underline">Change</a>
+               </div>
             </div>
           </div>
         </div>

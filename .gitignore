@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Temporary and scratch files
+scratch_db.js
+scratch_zoho.js
+next.txt

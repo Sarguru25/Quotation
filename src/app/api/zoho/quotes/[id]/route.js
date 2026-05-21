@@ -1,49 +1,45 @@
 import { NextResponse } from "next/server";
-import axios from "axios";
-import { getZohoAccessToken } from "@/lib/zoho";
-
-const ZOHO_ORGANIZATION_ID = process.env.ZOHO_ORGANIZATION_ID;
+import { requirePermission } from "@/lib/rbac/auth";
+import { PERMISSIONS } from "@/lib/rbac/permissions";
+import { getQuotationById, updateQuotation, deleteQuotation } from "@/lib/zoho/quotations";
 
 export async function GET(req, context) {
   try {
+    await requirePermission(PERMISSIONS.QUOTATION.VIEW);
     const { id } = await context.params;
-    const accessToken = await getZohoAccessToken();
-
-    const response = await axios.get(
-      `https://www.zohoapis.in/books/v3/estimates/${id}`,
-      {
-        headers: {
-          Authorization: `Zoho-oauthtoken ${accessToken}`,
-        },
-        params: {
-          organization_id: ZOHO_ORGANIZATION_ID,
-        },
-      }
-    );
-
-    return NextResponse.json(response.data.estimate);
+    
+    const estimate = await getQuotationById(id);
+    return NextResponse.json(estimate);
   } catch (error) {
-    console.error("GET Quote Error:", error.response?.data || error.message);
+    if (error.message?.includes("Forbidden") || error.message?.includes("Unauthorized")) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 403 });
+    }
+    console.error("[API] GET Quote Error:", error.message || error);
     return NextResponse.json(
       { error: "Failed to fetch quotation" },
-      { status: 500 }
+      { status: error.status || 500 }
     );
   }
 }
 
 export async function PUT(req, context) {
   try {
+    await requirePermission(PERMISSIONS.QUOTATION.EDIT);
     const { id } = await context.params;
     const body = await req.json();
-    const accessToken = await getZohoAccessToken();
 
-    const line_items = body.line_items.map((item) => ({
-      ...(item.item_id ? { item_id: item.item_id } : {}),
-      ...(item.line_item_id ? { line_item_id: item.line_item_id } : {}),
-      name: item.name,
-      quantity: Number(item.quantity),
-      rate: Number(item.rate),
-    }));
+    const line_items = body.line_items.map((item) => {
+      const payloadItem = {
+        name: item.name,
+        quantity: Number(item.quantity),
+        rate: Number(item.rate),
+      };
+      if (item.item_id) payloadItem.item_id = item.item_id;
+      if (item.line_item_id) payloadItem.line_item_id = item.line_item_id;
+      if (item.description) payloadItem.description = item.description;
+      if (item.tax_id) payloadItem.tax_id = item.tax_id;
+      return payloadItem;
+    });
 
     const quotePayload = {
       reference_number: body.reference_number,
@@ -52,62 +48,50 @@ export async function PUT(req, context) {
       subject: body.subject,
       notes: body.notes,
       terms: body.terms,
+      discount: `${Number(body.discount_percent) || 0}%`,
+      discount_type: "entity_level",
+      is_discount_before_tax: true,
+      adjustment: Number(body.adjustment) || 0,
       line_items,
-      // If customer_name is modified, might need to handle customer_id but for simplicity passing what is editable
     };
 
-    const response = await axios.put(
-      `https://www.zohoapis.in/books/v3/estimates/${id}`,
-      quotePayload,
-      {
-        headers: {
-          Authorization: `Zoho-oauthtoken ${accessToken}`,
-        },
-        params: {
-          organization_id: ZOHO_ORGANIZATION_ID,
-        },
-      }
-    );
+    const data = await updateQuotation(id, quotePayload);
 
     return NextResponse.json({
       success: true,
-      data: response.data,
+      data,
     });
   } catch (error) {
-    console.error("PUT Quote Error:", error.response?.data || error.message);
+    if (error.message?.includes("Forbidden") || error.message?.includes("Unauthorized")) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 403 });
+    }
+    console.error("[API] PUT Quote Error:", error.message || error);
     return NextResponse.json(
-      { success: false, error: error.response?.data || error.message },
-      { status: 500 }
+      { success: false, error: error.message || "Failed to update quotation" },
+      { status: error.status || 500 }
     );
   }
 }
 
 export async function DELETE(req, context) {
   try {
+    await requirePermission(PERMISSIONS.QUOTATION.DELETE);
     const { id } = await context.params;
-    const accessToken = await getZohoAccessToken();
-
-    const response = await axios.delete(
-      `https://www.zohoapis.in/books/v3/estimates/${id}`,
-      {
-        headers: {
-          Authorization: `Zoho-oauthtoken ${accessToken}`,
-        },
-        params: {
-          organization_id: ZOHO_ORGANIZATION_ID,
-        },
-      }
-    );
+    
+    const data = await deleteQuotation(id);
 
     return NextResponse.json({
       success: true,
-      data: response.data,
+      data,
     });
   } catch (error) {
-    console.error("DELETE Quote Error:", error.response?.data || error.message);
+    if (error.message?.includes("Forbidden") || error.message?.includes("Unauthorized")) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 403 });
+    }
+    console.error("[API] DELETE Quote Error:", error.message || error);
     return NextResponse.json(
-      { success: false, error: error.response?.data || error.message },
-      { status: 500 }
+      { success: false, error: error.message || "Failed to delete quotation" },
+      { status: error.status || 500 }
     );
   }
 }

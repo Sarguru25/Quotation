@@ -1,0 +1,581 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { Plus, Edit2, Trash2, Database, RefreshCw, X, Search, Filter } from "lucide-react";
+
+export default function PneumaticTab() {
+  const [activeTab, setActiveTab] = useState("DA"); // "DA" or "SA"
+  const [dataDA, setDataDA] = useState([]);
+  const [dataSA, setDataSA] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  
+  const [searchTerm, setSearchTerm] = useState("");
+  const [seriesFilter, setSeriesFilter] = useState("All");
+  const [matchStatusFilter, setMatchStatusFilter] = useState("All");
+  
+  const [formData, setFormData] = useState({
+    sr_no: "",
+    series: "",
+    model: "",
+    price_inr: "",
+    price_usd: "",
+    match_status: "Not Matched",
+    output_torque_nm: "",
+    spring_qty: "",
+    drawing_no: "",
+    adaptor_price_inr: "",
+    adaptor_price_usd: "",
+    mounting: "",
+    drive_type: "",
+    air_port_connections: "",
+  });
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      if (activeTab === "DA") {
+        const res = await fetch("/api/actuator-prices");
+        const json = await res.json();
+        if (json.success) setDataDA(json.data);
+      } else {
+        const res = await fetch("/api/actuator-prices-sa");
+        const json = await res.json();
+        if (json.success) setDataSA(json.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+    setSearchTerm("");
+    setSeriesFilter("All");
+    setMatchStatusFilter("All");
+  }, [activeTab]);
+
+  const handleSeed = async () => {
+    setIsLoading(true);
+    try {
+      const endpoint = activeTab === "DA" ? "/api/actuator-prices/seed" : "/api/actuator-prices-sa/seed";
+      const res = await fetch(endpoint, { method: "POST" });
+      const json = await res.json();
+      if (json.success) {
+        alert(json.message);
+        fetchData();
+      } else {
+        alert("Failed to seed: " + json.error);
+      }
+    } catch (error) {
+      console.error("Failed to seed data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm("Are you sure you want to delete this record?")) return;
+    
+    try {
+      const endpoint = activeTab === "DA" ? `/api/actuator-prices/${id}` : `/api/actuator-prices-sa/${id}`;
+      const res = await fetch(endpoint, { method: "DELETE" });
+      const json = await res.json();
+      if (json.success) {
+        if (activeTab === "DA") {
+          setDataDA(dataDA.filter(item => item._id !== id));
+        } else {
+          setDataSA(dataSA.filter(item => item._id !== id));
+        }
+      } else {
+        alert("Delete failed: " + json.error);
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+    }
+  };
+
+  const openModal = (item = null) => {
+    if (item) {
+      setEditingItem(item);
+      setFormData({
+        sr_no: item.sr_no || "",
+        series: item.series || "",
+        model: item.model || "",
+        price_inr: item.price_inr || "",
+        price_usd: item.price_usd || "",
+        match_status: item.match_status || "Not Matched",
+        output_torque_nm: item.output_torque_nm || "",
+        spring_qty: item.spring_qty || "",
+        drawing_no: item.drawing_no || "-",
+        adaptor_price_inr: item.adaptor_price_inr || "",
+        adaptor_price_usd: item.adaptor_price_usd || "",
+        mounting: item.mounting || "-",
+        drive_type: item.drive_type || "-",
+        air_port_connections: item.air_port_connections || "-"
+      });
+    } else {
+      setEditingItem(null);
+      setFormData({
+        sr_no: "",
+        series: "",
+        model: "",
+        price_inr: "",
+        price_usd: "",
+        match_status: "Not Matched",
+        output_torque_nm: "",
+        spring_qty: "",
+        drawing_no: "-",
+        adaptor_price_inr: "",
+        adaptor_price_usd: "",
+        mounting: "-",
+        drive_type: "-",
+        air_port_connections: "-"
+      });
+    }
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingItem(null);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    let payload = {};
+    if (activeTab === "DA") {
+      payload = {
+        ...formData,
+        sr_no: Number(formData.sr_no),
+        price_inr: Number(formData.price_inr),
+        price_usd: Number(formData.price_usd),
+        adaptor_price_inr: Number(formData.adaptor_price_inr || 0),
+        adaptor_price_usd: Number(formData.adaptor_price_usd || 0),
+        output_torque_nm: formData.output_torque_nm ? Number(formData.output_torque_nm) : null,
+        torque_nm: editingItem ? editingItem.torque_nm : {}, 
+      };
+    } else {
+      payload = {
+        ...formData,
+        series: formData.series,
+        model: formData.model,
+        spring_qty: Number(formData.spring_qty),
+        price_inr: Number(formData.price_inr),
+        price_usd: Number(formData.price_usd),
+        adaptor_price_inr: Number(formData.adaptor_price_inr || 0),
+        adaptor_price_usd: Number(formData.adaptor_price_usd || 0),
+        air_pressure_bar: editingItem ? editingItem.air_pressure_bar : {},
+        spring_output: editingItem ? editingItem.spring_output : {},
+      };
+    }
+
+    try {
+      const baseUrl = activeTab === "DA" ? "/api/actuator-prices" : "/api/actuator-prices-sa";
+      const url = editingItem ? `${baseUrl}/${editingItem._id}` : baseUrl;
+      const method = editingItem ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      
+      const json = await res.json();
+      if (json.success) {
+        closeModal();
+        fetchData();
+      } else {
+        alert("Operation failed: " + json.error);
+      }
+    } catch (error) {
+      console.error("Submit error:", error);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const currentData = activeTab === "DA" ? dataDA : dataSA;
+
+  const uniqueSeries = ["All", ...new Set(currentData.map(item => item.series).filter(Boolean))];
+
+  const filteredData = currentData.filter((item) => {
+    const matchesSearch = (item.model || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSeries = seriesFilter === "All" || item.series === seriesFilter;
+    const matchesStatus = 
+      activeTab === "SA" || matchStatusFilter === "All" 
+        ? true 
+        : item.match_status === matchStatusFilter;
+        
+    return matchesSearch && matchesSeries && matchesStatus;
+  });
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mt-4">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 tracking-tight">Pneumatic Actuators</h2>
+          <p className="text-sm text-gray-500 mt-1">Manage pricing for Double & Single Acting models</p>
+        </div>
+        <div className="flex space-x-3">
+          <button 
+            onClick={handleSeed}
+            className="flex items-center px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors font-medium text-sm border border-indigo-200 shadow-sm"
+          >
+            <Database className="w-4 h-4 mr-2" />
+            Seed DB ({activeTab})
+          </button>
+          <button 
+            onClick={fetchData}
+            className="flex items-center px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm border border-gray-200 shadow-sm"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+          <button 
+            onClick={() => openModal()}
+            className="flex items-center px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm shadow-md hover:shadow-lg"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add New ({activeTab})
+          </button>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-xl w-max mb-6">
+        <button
+          onClick={() => setActiveTab("DA")}
+          className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeTab === "DA" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          Double Acting (DA)
+        </button>
+        <button
+          onClick={() => setActiveTab("SA")}
+          className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeTab === "SA" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          Single Acting (SA)
+        </button>
+      </div>
+
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+        {/* Search */}
+        <div className="relative w-full md:w-96">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-4 w-4 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search by model..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm"
+          />
+        </div>
+
+        {/* Filters */}
+        <div className="flex items-center space-x-3 w-full md:w-auto">
+          <div className="flex items-center space-x-2">
+            <Filter className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">Series:</span>
+            <select
+              value={seriesFilter}
+              onChange={(e) => setSeriesFilter(e.target.value)}
+              className="pl-3 pr-8 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm bg-white"
+            >
+              {uniqueSeries.map(series => (
+                <option key={series} value={series}>{series}</option>
+              ))}
+            </select>
+          </div>
+
+          {activeTab === "DA" && (
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium text-gray-700">Status:</span>
+              <select
+                value={matchStatusFilter}
+                onChange={(e) => setMatchStatusFilter(e.target.value)}
+                className="pl-3 pr-8 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm bg-white"
+              >
+                <option value="All">All</option>
+                <option value="Matched">Matched</option>
+                <option value="Not Matched">Not Matched</option>
+              </select>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto max-h-[60vh]">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-gray-50 text-gray-600 font-semibold border-b border-gray-200 uppercase tracking-wider text-xs sticky top-0 z-10 shadow-sm">
+              <tr>
+                {activeTab === "DA" && <th className="px-6 py-4">Sr No</th>}
+                <th className="px-6 py-4">Series</th>
+                <th className="px-6 py-4">Model</th>
+                <th className="px-6 py-4">Drawing No</th>
+                {activeTab === "SA" && <th className="px-6 py-4 text-center">Spring Qty</th>}
+                <th className="px-6 py-4 text-right">Price (INR)</th>
+                <th className="px-6 py-4 text-right">Price (USD)</th>
+                {activeTab === "DA" && <th className="px-6 py-4 text-center">Match Status</th>}
+                <th className="px-6 py-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {isLoading && currentData.length === 0 ? (
+                <tr>
+                  <td colSpan="9" className="px-6 py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center justify-center">
+                      <RefreshCw className="w-8 h-8 animate-spin text-gray-400 mb-2" />
+                      <p>Loading {activeTab} data...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredData.length === 0 ? (
+                <tr>
+                  <td colSpan="9" className="px-6 py-12 text-center text-gray-500">
+                    No {activeTab} data found. Try adjusting your search/filters or click "Seed DB ({activeTab})".
+                  </td>
+                </tr>
+              ) : (
+                filteredData.map((item) => (
+                  <tr key={item._id} className="hover:bg-gray-50/80 transition-colors group">
+                    {activeTab === "DA" && <td className="px-6 py-4 text-gray-500 font-medium">{item.sr_no}</td>}
+                    <td className="px-6 py-4 font-semibold text-gray-900">
+                      <span className="px-2.5 py-1 bg-gray-100 rounded-md text-xs">{item.series}</span>
+                    </td>
+                    <td className="px-6 py-4 font-medium text-gray-700">{item.model}</td>
+                    <td className="px-6 py-4 text-gray-500 text-xs font-mono">{item.drawing_no}</td>
+                    {activeTab === "SA" && (
+                      <td className="px-6 py-4 text-center font-medium text-gray-700">
+                        <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-md text-xs">{item.spring_qty}</span>
+                      </td>
+                    )}
+                    <td className="px-6 py-4 text-right font-medium text-gray-800">₹{item.price_inr?.toLocaleString('en-IN')}</td>
+                    <td className="px-6 py-4 text-right font-medium text-emerald-600">${item.price_usd?.toLocaleString()}</td>
+                    {activeTab === "DA" && (
+                      <td className="px-6 py-4 text-center">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                          item.match_status === 'Matched' 
+                            ? 'bg-green-100 text-green-700' 
+                            : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {item.match_status || 'Unknown'}
+                        </span>
+                      </td>
+                    )}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => openModal(item)}
+                          className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+                          title="Edit"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(item._id)}
+                          className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-y-auto max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
+              <h2 className="text-xl font-bold text-gray-900">
+                {editingItem ? `Edit ${activeTab} Model` : `Add New ${activeTab} Model`}
+              </h2>
+              <button 
+                onClick={closeModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="p-6">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                {activeTab === "DA" ? (
+                  <div className="col-span-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Sr No</label>
+                    <input 
+                      type="number" 
+                      name="sr_no" 
+                      value={formData.sr_no} 
+                      onChange={handleChange} 
+                      required 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm"
+                    />
+                  </div>
+                ) : (
+                  <div className="col-span-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Spring Qty</label>
+                    <input 
+                      type="number" 
+                      name="spring_qty" 
+                      value={formData.spring_qty} 
+                      onChange={handleChange} 
+                      required 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm"
+                    />
+                  </div>
+                )}
+                <div className="col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Series</label>
+                  <input 
+                    type="text" 
+                    name="series" 
+                    value={formData.series} 
+                    onChange={handleChange} 
+                    required 
+                    placeholder={activeTab === "DA" ? "e.g. ZRC_DA" : "e.g. ZRC_SA"}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Model Name</label>
+                <input 
+                  type="text" 
+                  name="model" 
+                  value={formData.model} 
+                  onChange={handleChange} 
+                  required 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price (INR)</label>
+                  <input 
+                    type="number" 
+                    name="price_inr" 
+                    value={formData.price_inr} 
+                    onChange={handleChange} 
+                    required 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price (USD)</label>
+                  <input 
+                    type="number" 
+                    name="price_usd" 
+                    value={formData.price_usd} 
+                    onChange={handleChange} 
+                    required 
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-4 mb-4">
+                <h3 className="text-sm font-bold text-gray-800 mb-3">Auxiliary Details</h3>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Drawing No</label>
+                    <input type="text" name="drawing_no" value={formData.drawing_no} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Mounting</label>
+                    <input type="text" name="mounting" value={formData.mounting} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Drive Type</label>
+                    <input type="text" name="drive_type" value={formData.drive_type} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Air Port Connections</label>
+                    <input type="text" name="air_port_connections" value={formData.air_port_connections} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Adaptor Price (INR)</label>
+                    <input type="number" name="adaptor_price_inr" value={formData.adaptor_price_inr} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Adaptor Price (USD)</label>
+                    <input type="number" name="adaptor_price_usd" value={formData.adaptor_price_usd} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm" />
+                  </div>
+                </div>
+              </div>
+
+              {activeTab === "DA" && (
+                <div className="border-t border-gray-100 pt-4 mt-4 grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Match Status</label>
+                    <select 
+                      name="match_status" 
+                      value={formData.match_status} 
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white text-sm"
+                    >
+                      <option value="Not Matched">Not Matched</option>
+                      <option value="Matched">Matched</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Output Torque (Nm)</label>
+                    <input 
+                      type="number" 
+                      name="output_torque_nm" 
+                      value={formData.output_torque_nm} 
+                      onChange={handleChange} 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100 mt-6 sticky bottom-0 bg-white">
+                <button 
+                  type="button" 
+                  onClick={closeModal}
+                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm shadow-md"
+                >
+                  {editingItem ? "Save Changes" : "Create Record"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
