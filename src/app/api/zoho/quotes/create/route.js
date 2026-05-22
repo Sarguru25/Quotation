@@ -36,7 +36,15 @@ export async function POST(req) {
       is_discount_before_tax: true,
       adjustment: Number(body.adjustment) || 0,
       line_items,
+      custom_fields: []
     };
+
+    if (body.cf_quotation_creater) {
+      quotePayload.custom_fields.push({
+        api_name: "cf_quotation_creater",
+        value: body.cf_quotation_creater
+      });
+    }
 
     // 3. Service Layer call
     const data = await createQuotation(quotePayload);

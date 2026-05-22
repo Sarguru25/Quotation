@@ -53,7 +53,15 @@ export async function PUT(req, context) {
       is_discount_before_tax: true,
       adjustment: Number(body.adjustment) || 0,
       line_items,
+      custom_fields: []
     };
+
+    if (body.cf_quotation_creater !== undefined) {
+      quotePayload.custom_fields.push({
+        api_name: "cf_quotation_creater",
+        value: body.cf_quotation_creater
+      });
+    }
 
     const data = await updateQuotation(id, quotePayload);
 

@@ -5,7 +5,8 @@ import ActivityTimeline from "./ActivityTimeline";
 import dbConnect from "@/lib/db";
 import Quotation from "@/models/Quotation";
 import ActivityLog from "@/models/ActivityLog";
-import "@/models/User";
+import PublicQuotationLink from "@/models/PublicQuotationLink";
+import User from "@/models/User";
 
 const ZOHO_ORGANIZATION_ID = process.env.ZOHO_ORGANIZATION_ID;
 
@@ -45,6 +46,14 @@ export default async function QuoteDetailsPage({ params }) {
   await dbConnect();
   const localQuote = await Quotation.findOne({ zohoQuoteId: id }).populate('userId', 'name email').lean();
   const activityLogs = await ActivityLog.find({ "metadata.quotationId": id }).populate('user', 'name email').lean();
+  const publicLink = await PublicQuotationLink.findOne({ quotationId: id }).lean();
+
+  const creatorId = quote.custom_fields?.find(cf => cf.api_name === "cf_quotation_creater")?.value;
+  let creatorName = "-";
+  if (creatorId) {
+    const user = await User.findById(creatorId).lean();
+    if (user) creatorName = user.name;
+  }
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-IN", {
@@ -152,9 +161,13 @@ export default async function QuoteDetailsPage({ params }) {
                     <td className="py-2 px-3 bg-gray-50 border-r border-gray-200 text-gray-600">Customer Ref</td>
                     <td className="py-2 px-3">{quote.reference_number || "-"}</td>
                   </tr>
-                  <tr>
+                  <tr className="border-b border-gray-200">
                     <td className="py-2 px-3 bg-gray-50 border-r border-gray-200 text-gray-600">Sales person</td>
                     <td className="py-2 px-3">{quote.salesperson_name || "-"}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 px-3 bg-gray-50 border-r border-gray-200 text-gray-600">Creator</td>
+                    <td className="py-2 px-3 font-medium text-blue-700">{creatorName}</td>
                   </tr>
                 </tbody>
               </table>
@@ -276,6 +289,59 @@ export default async function QuoteDetailsPage({ params }) {
 
       </div>
       
+      {publicLink && (
+        <div className="w-full max-w-4xl bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6 print:hidden">
+          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+            Customer Portal Status
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Link Status</p>
+              <p className={`font-semibold ${publicLink.isActive ? 'text-green-600' : 'text-red-600'}`}>
+                {publicLink.isActive ? 'Active' : 'Disabled'}
+              </p>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Customer Action</p>
+              <p className={`font-semibold ${publicLink.status === 'Accepted' ? 'text-green-600' : publicLink.status === 'Rejected' ? 'text-red-600' : 'text-blue-600'}`}>
+                {publicLink.status}
+              </p>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Total Views</p>
+              <p className="font-semibold text-gray-800">{publicLink.viewCount} views</p>
+              {publicLink.viewedAt && <p className="text-xs text-gray-500 mt-1">Last: {new Date(publicLink.viewedAt).toLocaleDateString()}</p>}
+            </div>
+          </div>
+
+          {publicLink.status === 'Rejected' && publicLink.rejectionReason && (
+            <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-6">
+              <p className="text-sm font-bold text-red-800 mb-1">Rejection Reason:</p>
+              <p className="text-sm text-red-700">{publicLink.rejectionReason}</p>
+            </div>
+          )}
+
+          {publicLink.feedback && publicLink.feedback.length > 0 && (
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">Customer Feedback / Revision Requests</h3>
+              <div className="space-y-3">
+                {publicLink.feedback.map((fb, idx) => (
+                  <div key={idx} className="bg-blue-50/50 border border-blue-100 rounded-xl p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="font-semibold text-blue-900 text-sm">{fb.customerName || 'Customer'}</span>
+                      <span className="text-xs text-blue-600/70">{new Date(fb.timestamp).toLocaleString()}</span>
+                    </div>
+                    <p className="text-sm text-blue-800 whitespace-pre-wrap">{fb.message}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <ActivityTimeline quote={quote} localQuote={localQuote} activityLogs={activityLogs} />
     </div>
   );

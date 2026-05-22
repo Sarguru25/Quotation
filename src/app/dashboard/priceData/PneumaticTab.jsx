@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Database, RefreshCw, X, Search, Filter } from "lucide-react";
 
-export default function PneumaticTab() {
+export default function PneumaticTab({ canManage }) {
   const [activeTab, setActiveTab] = useState("DA"); // "DA" or "SA"
   const [dataDA, setDataDA] = useState([]);
   const [dataSA, setDataSA] = useState([]);
@@ -38,11 +38,11 @@ export default function PneumaticTab() {
       if (activeTab === "DA") {
         const res = await fetch("/api/actuator-prices");
         const json = await res.json();
-        if (json.success) setDataDA(json.data);
+        if (json.success) setDataDA(json.data || []);
       } else {
         const res = await fetch("/api/actuator-prices-sa");
         const json = await res.json();
-        if (json.success) setDataSA(json.data);
+        if (json.success) setDataSA(json.data || []);
       }
     } catch (error) {
       console.error("Failed to fetch data:", error);
@@ -204,9 +204,9 @@ export default function PneumaticTab() {
 
   const currentData = activeTab === "DA" ? dataDA : dataSA;
 
-  const uniqueSeries = ["All", ...new Set(currentData.map(item => item.series).filter(Boolean))];
+  const uniqueSeries = ["All", ...new Set((currentData || []).map(item => item?.series).filter(Boolean))];
 
-  const filteredData = currentData.filter((item) => {
+  const filteredData = (currentData || []).filter((item) => {
     const matchesSearch = (item.model || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesSeries = seriesFilter === "All" || item.series === seriesFilter;
     const matchesStatus = 
@@ -225,13 +225,15 @@ export default function PneumaticTab() {
           <p className="text-sm text-gray-500 mt-1">Manage pricing for Double & Single Acting models</p>
         </div>
         <div className="flex space-x-3">
-          <button 
-            onClick={handleSeed}
-            className="flex items-center px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors font-medium text-sm border border-indigo-200 shadow-sm"
-          >
-            <Database className="w-4 h-4 mr-2" />
-            Seed DB ({activeTab})
-          </button>
+          {canManage && (
+            <button 
+              onClick={handleSeed}
+              className="flex items-center px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors font-medium text-sm border border-indigo-200 shadow-sm"
+            >
+              <Database className="w-4 h-4 mr-2" />
+              Seed DB ({activeTab})
+            </button>
+          )}
           <button 
             onClick={fetchData}
             className="flex items-center px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm border border-gray-200 shadow-sm"
@@ -239,13 +241,15 @@ export default function PneumaticTab() {
             <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
-          <button 
-            onClick={() => openModal()}
-            className="flex items-center px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm shadow-md hover:shadow-lg"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add New ({activeTab})
-          </button>
+          {canManage && (
+            <button 
+              onClick={() => openModal()}
+              className="flex items-center px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm shadow-md hover:shadow-lg"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add New ({activeTab})
+            </button>
+          )}
         </div>
       </div>
 
@@ -330,11 +334,11 @@ export default function PneumaticTab() {
                 <th className="px-6 py-4 text-right">Price (INR)</th>
                 <th className="px-6 py-4 text-right">Price (USD)</th>
                 {activeTab === "DA" && <th className="px-6 py-4 text-center">Match Status</th>}
-                <th className="px-6 py-4 text-right">Actions</th>
+                {canManage && <th className="px-6 py-4 text-right">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {isLoading && currentData.length === 0 ? (
+              {isLoading && (currentData?.length || 0) === 0 ? (
                 <tr>
                   <td colSpan="9" className="px-6 py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center justify-center">
@@ -343,7 +347,7 @@ export default function PneumaticTab() {
                     </div>
                   </td>
                 </tr>
-              ) : filteredData.length === 0 ? (
+              ) : (filteredData?.length || 0) === 0 ? (
                 <tr>
                   <td colSpan="9" className="px-6 py-12 text-center text-gray-500">
                     No {activeTab} data found. Try adjusting your search/filters or click "Seed DB ({activeTab})".
@@ -376,24 +380,26 @@ export default function PneumaticTab() {
                         </span>
                       </td>
                     )}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => openModal(item)}
-                          className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
-                          title="Edit"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(item._id)}
-                          className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+                    {canManage && (
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => openModal(item)}
+                            className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+                            title="Edit"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(item._id)}
+                            className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

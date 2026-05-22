@@ -3,37 +3,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Plus, RefreshCw, Trash2, Edit2, Settings, Archive, ChevronDown, CheckCircle2, Box, PackagePlus, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
-import zraDaData from "@/data/ZRA_DA.json";
-import zrbDaData from "@/data/ZRB_DA.json";
-import zrcDaData from "@/data/ZRC_DA.json";
-import zrdDaData from "@/data/ZRD_DA.json";
-import zraSaData from "@/data/ZRA_SA.json";
-import zrbSaData from "@/data/ZRB_SA.json";
-import zrcSaData from "@/data/ZRC_SA.json";
-import zrdSaData from "@/data/ZRD_SA.json";
-// import zrcSaBallData from "@/data/ZRC_SA_Ball.json";
-// import zrcSaButterflyData from "@/data/ZRC_SA_Butterfly.json";
-import accessoriesData from "@/data/accessories.json";
-import adaptorData from "@/data/ZRC_Adaptor.json";
-import drawingNoData from "@/data/ZRC_Drawing_no.json";
-import otherDetailsData from "@/data/ZRC_other_details.json";
-
-const findByModel = (arr, model) => arr?.find((item) => item.model === model);
-
-const daSeriesMap = {
-  ZRA: zraDaData,
-  ZRB: zrbDaData,
-  ZRC: zrcDaData,
-  ZRD: zrdDaData,
-};
-
-const saSeriesMap = {
-  ZRA: zraSaData,
-  ZRB: zrbSaData,
-  ZRC: zrcSaData,
-  ZRD: zrdSaData,
-};
-
 // Helper: get matching double-acting actuator (torque >= required)
 const getDoubleActingMatch = (requiredTorque, airPressureBar, daData) => {
   const pressureKey = String(airPressureBar);
@@ -51,19 +20,16 @@ const getDoubleActingMatch = (requiredTorque, airPressureBar, daData) => {
   return matched || sorted[sorted.length - 1] || null;
 };
 
-// Helper: get matching single-acting actuator (ball or butterfly)
+// Helper: get matching single-acting actuator
 const getSingleActingMatch = (
   requiredTorque,
   airPressureBar,
-  actuatorSeries
+  saData
 ) => {
   const pressureKey = String(airPressureBar);
 
-  // 1. Get dataset based on actuator series
-  const dataset = saSeriesMap[actuatorSeries] || [];
-
-  // 2. Filter matching models
-  const valid = dataset.filter((item) => {
+  // 1. Filter matching models
+  const valid = (saData || []).filter((item) => {
     const pressureData = item?.air_pressure_bar?.[pressureKey];
 
     if (!pressureData) return false;
@@ -76,7 +42,7 @@ const getSingleActingMatch = (
   });
 
   // 3. No matches
-  if (valid.length === 0) return null;
+  if ((valid?.length || 0) === 0) return null;
 
   // 4. Prefer even spring_qty
   const evenSpringMatches = valid.filter(
@@ -84,7 +50,7 @@ const getSingleActingMatch = (
   );
 
   const finalPool =
-    evenSpringMatches.length > 0
+    (evenSpringMatches?.length || 0) > 0
       ? evenSpringMatches
       : valid;
 
@@ -102,6 +68,37 @@ const getSingleActingMatch = (
   return finalPool[0];
 };
 export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
+
+  // ========== DATABASE DATA ==========
+  const [dbDaData, setDbDaData] = useState([]);
+  const [dbSaData, setDbSaData] = useState([]);
+  const [dbAccessories, setDbAccessories] = useState([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoadingData(true);
+        const [daRes, saRes, accRes] = await Promise.all([
+          fetch('/api/actuator-prices'),
+          fetch('/api/actuator-prices-sa'),
+          fetch('/api/accessory-prices')
+        ]);
+        const daJson = await daRes.json();
+        const saJson = await saRes.json();
+        const accJson = await accRes.json();
+
+        if (daJson.success) setDbDaData(daJson.data);
+        if (saJson.success) setDbSaData(saJson.data);
+        if (accJson.success) setDbAccessories(accJson.data);
+      } catch (err) {
+        console.error('Failed to fetch data', err);
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   // ========== INPUT FIELDS (User entries) ==========
   const [valveType, setValveType] = useState("Ball Valve");
@@ -157,7 +154,7 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
     if (actuatorType !== "Double Acting (DA)") return null;
 
     // Get selected dataset dynamically
-    const selectedDaData = daSeriesMap[actuatorSeries] || [];
+    const selectedDaData = (dbDaData || []).filter(item => item?.series === `${actuatorSeries}_DA` || item?.series === actuatorSeries);
 
     return getDoubleActingMatch(
       inputTorqueWithFOS,
@@ -169,21 +166,25 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
     actuatorSeries,
     inputTorqueWithFOS,
     airPressureNum,
+    dbDaData
   ]);
 
   const singleActingMatch = useMemo(() => {
     if (actuatorType !== "Single Acting (SA)") return null;
 
+    const selectedSaData = (dbSaData || []).filter(item => item?.series === `${actuatorSeries}_SA` || item?.series === actuatorSeries);
+
     return getSingleActingMatch(
       inputTorqueWithFOS,
       airPressureNum,
-      actuatorSeries
+      selectedSaData
     );
   }, [
     actuatorType,
     inputTorqueWithFOS,
     airPressureNum,
-    actuatorSeries
+    actuatorSeries,
+    dbSaData
   ]);
   // ========== RECALCULATE FUNCTION (sets all output fields from formulas) ==========
   const recalculateOutputs = useCallback(() => {
@@ -202,7 +203,7 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
       singleActingMatch
     ) {
       newOutputTorque =
-        singleActingMatch?.torque_nm?.[String(airPressureNum)] || 0;
+        singleActingMatch?.air_pressure_bar?.[String(airPressureNum)]?.start || 0;
     }
 
     setOutputTorque(newOutputTorque);
@@ -225,43 +226,33 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
       setOutputSpringQty(singleActingMatch?.spring_qty || "");
     }
 
-    // Model
+    // Model & Metadata
     let newModel = "";
+    let matchData = null;
+
     if (actuatorType === "Double Acting (DA)" && doubleActingMatch) {
       newModel = doubleActingMatch.model;
+      matchData = doubleActingMatch;
     } else if (actuatorType === "Single Acting (SA)" && singleActingMatch) {
       newModel = singleActingMatch.model;
+      matchData = singleActingMatch;
     }
     setOutputModel(newModel);
 
-    // Mounting, Drive Type, Air Ports from other_details.json
-    const otherDetails = findByModel(otherDetailsData, newModel);
-    setOutputMountingStandard(otherDetails?.mounting || "");
-    setOutputDriveType(otherDetails?.drive_type || "");
-    setOutputAirPortConnections(otherDetails?.air_port_connections || "");
-
-    // Drawing Number
-    const drawingDataSet = actuatorType === "Double Acting (DA)" ? drawingNoData.double_acting : drawingNoData.single_acting;
-    const drawingEntry = drawingDataSet?.find(entry => entry.model === newModel);
-    setOutputDrawingNumber(drawingEntry?.drawing_no || "");
+    // Metadata directly from the database schema
+    setOutputMountingStandard(matchData?.mounting || "");
+    setOutputDriveType(matchData?.drive_type || "");
+    setOutputAirPortConnections(matchData?.air_port_connections || "");
+    setOutputDrawingNumber(matchData?.drawing_no || "");
 
     // Actuator Unit Price
-    let newActPrice = 0;
-    if (actuatorType === "Double Acting (DA)" && doubleActingMatch) newActPrice = doubleActingMatch.price_inr || 0;
-    else if (actuatorType === "Single Acting (SA)" && singleActingMatch) newActPrice = singleActingMatch.price_inr || 0;
-    setOutputActuatorUnitPrice(newActPrice);
+    setOutputActuatorUnitPrice(matchData?.price_inr || 0);
 
     // Adaptor Price
     let newAdaptorPrice = 0;
-
     if (adaptorRequired === "Yes") {
-      const adaptorEntry = adaptorData.find(
-        (item) => item.adaptor === newModel
-      );
-
-      newAdaptorPrice = adaptorEntry?.price_inr || 0;
+      newAdaptorPrice = matchData?.adaptor_price_inr || 0;
     }
-
     setOutputAdaptorPrice(newAdaptorPrice);
 
     // Operation Principle
@@ -283,25 +274,25 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
 
   // ========== ACCESSORIES PRICES ==========
   const afrPrice = useMemo(() => {
-    const found = accessoriesData.find((acc) => acc.model === accessoriesAFR);
+    const found = dbAccessories.find((acc) => acc.model === accessoriesAFR);
     return found?.price_inr || 0;
-  }, [accessoriesAFR]);
+  }, [accessoriesAFR, dbAccessories]);
   const lsPrice = useMemo(() => {
-    const found = accessoriesData.find((acc) => acc.model === accessoriesLS);
+    const found = dbAccessories.find((acc) => acc.model === accessoriesLS);
     return found?.price_inr || 0;
-  }, [accessoriesLS]);
+  }, [accessoriesLS, dbAccessories]);
   const sovPrice = useMemo(() => {
-    const found = accessoriesData.find((acc) => acc.model === accessoriesSOV);
+    const found = dbAccessories.find((acc) => acc.model === accessoriesSOV);
     return found?.price_inr || 0;
-  }, [accessoriesSOV]);
+  }, [accessoriesSOV, dbAccessories]);
   const qevPrice = useMemo(() => {
-    const found = accessoriesData.find((acc) => acc.model === accessoriesQEV);
+    const found = dbAccessories.find((acc) => acc.model === accessoriesQEV);
     return found?.price_inr || 0;
-  }, [accessoriesQEV]);
+  }, [accessoriesQEV, dbAccessories]);
   const scPrice = useMemo(() => {
-    const found = accessoriesData.find((acc) => acc.model === accessoriesSC);
+    const found = dbAccessories.find((acc) => acc.model === accessoriesSC);
     return found?.price_inr || 0;
-  }, [accessoriesSC]);
+  }, [accessoriesSC, dbAccessories]);
 
   const totalAccessoriesPrice = afrPrice + lsPrice + sovPrice + qevPrice + scPrice;
   const unitPriceTotal = outputActuatorUnitPrice + outputAdaptorPrice + totalAccessoriesPrice;

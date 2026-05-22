@@ -5,9 +5,9 @@ import { NextResponse } from "next/server";
 export async function PUT(req, { params }) {
   try {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
-    const price = await ZreqmPrice.findByIdAndUpdate(id, body, { new: true });
+    const price = await ZreqmPrice.findByIdAndUpdate(id, body, { returnDocument: 'after' });
     if (!price) return NextResponse.json({ success: false, error: "Price not found" }, { status: 404 });
     return NextResponse.json({ success: true, data: price });
   } catch (error) {
@@ -18,7 +18,7 @@ export async function PUT(req, { params }) {
 export async function DELETE(req, { params }) {
   try {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     const deletedPrice = await ZreqmPrice.findByIdAndDelete(id);
     if (!deletedPrice) return NextResponse.json({ success: false, error: "Price not found" }, { status: 404 });
     return NextResponse.json({ success: true, data: {} });

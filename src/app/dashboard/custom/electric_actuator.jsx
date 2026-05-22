@@ -3,8 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Plus, RefreshCw, Trash2, Edit2, Settings, Archive, ChevronDown, CheckCircle2, Zap, PackagePlus, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
-import ZREQT from "@/data/ZREQT.json";
-import ZREQM from "@/data/ZREQM.json";
+// Database data will be fetched inside the component
 
 export default function ElectricActuator({ onSave, editProduct, onCancel }) {
 
@@ -47,14 +46,41 @@ export default function ElectricActuator({ onSave, editProduct, onCancel }) {
   const enclosureOptions = ["IP67", "IP68"];
   const limitSwitchOptions = ["ON/OFF", "SPDT 250V AC 10A"];
 
-  // SELECT JSON FILE
+  // ========== DATABASE DATA ==========
+  const [dbZreqt, setDbZreqt] = useState([]);
+  const [dbZreqm, setDbZreqm] = useState([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoadingData(true);
+        const [zreqtRes, zreqmRes] = await Promise.all([
+          fetch('/api/zreqt-prices'),
+          fetch('/api/zreqm-prices')
+        ]);
+        const zreqtJson = await zreqtRes.json();
+        const zreqmJson = await zreqmRes.json();
+
+        if (zreqtJson.success) setDbZreqt(zreqtJson.data);
+        if (zreqmJson.success) setDbZreqm(zreqmJson.data);
+      } catch (err) {
+        console.error('Failed to fetch data', err);
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // SELECT DATABASE DATA
   const selectedJson = useMemo(() => {
-    return actuator === "ZREQT" ? ZREQT : ZREQM;
-  }, [actuator]);
+    return actuator === "ZREQT" ? dbZreqt : dbZreqm;
+  }, [actuator, dbZreqt, dbZreqm]);
 
   // OPERATING TYPE DATA
   const operationData = useMemo(() => {
-    return selectedJson[operatingType] || [];
+    return selectedJson.filter(item => item.category === operatingType) || [];
   }, [selectedJson, operatingType]);
 
   // UNIQUE TORQUE VALUES

@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
+import { useSession } from "next-auth/react";
+import { PERMISSIONS, hasPermission } from "@/lib/rbac/permissions";
 import PneumaticTab from "./PneumaticTab";
 import ZreqmTab from "./ZreqmTab";
 import ZreqtTab from "./ZreqtTab";
@@ -8,6 +10,11 @@ import AccessoriesTab from "./AccessoriesTab";
 
 export default function MasterPriceDataPage() {
   const [activeTab, setActiveTab] = useState("Pneumatic");
+  const { data: session } = useSession();
+
+  const userPermissions = session?.user?.permissions || [];
+  const isAdmin = session?.user?.role === "Admin";
+  const canManage = isAdmin || hasPermission(userPermissions, PERMISSIONS.PRICE_DATA.MANAGE);
 
   const tabs = ["Pneumatic", "ZREQM", "ZREQT", "Accessories"];
 
@@ -35,10 +42,10 @@ export default function MasterPriceDataPage() {
       </div>
 
       <div>
-        {activeTab === "Pneumatic" && <PneumaticTab />}
-        {activeTab === "ZREQM" && <ZreqmTab />}
-        {activeTab === "ZREQT" && <ZreqtTab />}
-        {activeTab === "Accessories" && <AccessoriesTab />}
+        {activeTab === "Pneumatic" && <PneumaticTab canManage={canManage} />}
+        {activeTab === "ZREQM" && <ZreqmTab canManage={canManage} />}
+        {activeTab === "ZREQT" && <ZreqtTab canManage={canManage} />}
+        {activeTab === "Accessories" && <AccessoriesTab canManage={canManage} />}
       </div>
     </div>
   );

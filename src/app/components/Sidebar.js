@@ -29,11 +29,11 @@ export default function Sidebar() {
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, requiresAny: [] },
     { name: "Quotations", href: "/dashboard/quotations", icon: FileText, requiresAny: [PERMISSIONS.QUOTATION.VIEW] },
     { name: "Customers", href: "/dashboard/customers", icon: Users, requiresAny: [PERMISSIONS.CUSTOMER.VIEW] },
-    { name: "Custom Quote", href: "/dashboard/custom", icon:FilePlus, requiresAny: [PERMISSIONS.PRODUCT.VIEW] },
+    { name: "Custom Quote", href: "/dashboard/custom", icon:FilePlus, requiresAny: [PERMISSIONS.CUSTOM_QUOTE.VIEW] },
     { name: "Items", href: "/dashboard/items", icon: ListPlus, requiresAny: [PERMISSIONS.PRODUCT.VIEW] },
     { name: "Users", href: "/dashboard/users", icon: UserCircle, requiresAny: [PERMISSIONS.USER.VIEW] },
     { name: "Roles", href: "/dashboard/roles", icon: ShieldAlert, requiresAny: [PERMISSIONS.ROLE.MANAGE] },
-    { name: "Price Data", href: "/dashboard/priceData", icon: ReceiptIndianRupee},
+    { name: "Price Data", href: "/dashboard/priceData", icon: ReceiptIndianRupee, requiresAny: [PERMISSIONS.PRICE_DATA.VIEW] },
   ];
 
   // Filter links based on permissions

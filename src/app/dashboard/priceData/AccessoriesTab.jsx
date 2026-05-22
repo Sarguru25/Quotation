@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Database, RefreshCw, X, Search } from "lucide-react";
 
-export default function AccessoriesTab() {
+export default function AccessoriesTab({ canManage }) {
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -21,7 +21,7 @@ export default function AccessoriesTab() {
     try {
       const res = await fetch("/api/accessory-prices");
       const json = await res.json();
-      if (json.success) setData(json.data);
+      if (json.success) setData(json.data || []);
     } catch (error) {
       console.error("Failed to fetch data:", error);
     } finally {
@@ -128,7 +128,7 @@ export default function AccessoriesTab() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const filteredData = data.filter((item) => {
+  const filteredData = (data || []).filter((item) => {
     return (item.model || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
            (item.description || "").toLowerCase().includes(searchTerm.toLowerCase());
   });
@@ -141,15 +141,19 @@ export default function AccessoriesTab() {
           <p className="text-sm text-gray-500 mt-1">Manage pricing for actuator accessories</p>
         </div>
         <div className="flex space-x-3">
-          <button onClick={handleSeed} className="flex items-center px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors font-medium text-sm border border-indigo-200 shadow-sm">
-            <Database className="w-4 h-4 mr-2" /> Seed DB
-          </button>
+          {canManage && (
+            <button onClick={handleSeed} className="flex items-center px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors font-medium text-sm border border-indigo-200 shadow-sm">
+              <Database className="w-4 h-4 mr-2" /> Seed DB
+            </button>
+          )}
           <button onClick={fetchData} className="flex items-center px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm border border-gray-200 shadow-sm">
             <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} /> Refresh
           </button>
-          <button onClick={() => openModal()} className="flex items-center px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm shadow-md hover:shadow-lg">
-            <Plus className="w-4 h-4 mr-2" /> Add New
-          </button>
+          {canManage && (
+            <button onClick={() => openModal()} className="flex items-center px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm shadow-md hover:shadow-lg">
+              <Plus className="w-4 h-4 mr-2" /> Add New
+            </button>
+          )}
         </div>
       </div>
 
@@ -171,11 +175,11 @@ export default function AccessoriesTab() {
                 <th className="px-6 py-4">Description</th>
                 <th className="px-6 py-4 text-right">List Price (INR)</th>
                 <th className="px-6 py-4 text-right">List Price (USD)</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+                {canManage && <th className="px-6 py-4 text-right">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {isLoading && data.length === 0 ? (
+              {isLoading && (data?.length || 0) === 0 ? (
                 <tr>
                   <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center justify-center">
@@ -184,7 +188,7 @@ export default function AccessoriesTab() {
                     </div>
                   </td>
                 </tr>
-              ) : filteredData.length === 0 ? (
+              ) : (filteredData?.length || 0) === 0 ? (
                 <tr>
                   <td colSpan="5" className="px-6 py-12 text-center text-gray-500">No data found. Click "Seed DB" to load from JSON.</td>
                 </tr>
@@ -195,12 +199,14 @@ export default function AccessoriesTab() {
                     <td className="px-6 py-4 font-medium text-gray-700">{item.description}</td>
                     <td className="px-6 py-4 text-right font-medium text-gray-800">₹{item.price_inr?.toLocaleString('en-IN')}</td>
                     <td className="px-6 py-4 text-right font-medium text-emerald-600">${item.price_usd?.toLocaleString()}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openModal(item)} className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors" title="Edit"><Edit2 className="w-4 h-4" /></button>
-                        <button onClick={() => handleDelete(item._id)} className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
-                      </div>
-                    </td>
+                    {canManage && (
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => openModal(item)} className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors" title="Edit"><Edit2 className="w-4 h-4" /></button>
+                          <button onClick={() => handleDelete(item._id)} className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

@@ -1,0 +1,20 @@
+[
+  { "adaptor": "ZRD1DA", "price_inr": 554.00, "price_usd": 7.00 },
+  { "adaptor": "ZRD2DA", "price_inr": 554.00, "price_usd": 7.00 },
+  { "adaptor": "ZRD4DA", "price_inr": 554.00, "price_usd": 7.00 },
+  { "adaptor": "ZRD6DA", "price_inr": 554.00, "price_usd": 7.00 },
+  { "adaptor": "ZRD8DA", "price_inr": 554.00, "price_usd": 7.00 },
+  { "adaptor": "ZRD10DA", "price_inr": 554.00, "price_usd": 7.00 },
+  { "adaptor": "ZRD12DA", "price_inr": 829.00, "price_usd": 10.00 },
+  { "adaptor": "ZRD14DA", "price_inr": 829.00, "price_usd": 10.00 },
+  { "adaptor": "ZRD16DA", "price_inr": 829.00, "price_usd": 10.00 },
+  { "adaptor": "ZRD20DA", "price_inr": 1105.00, "price_usd": 14.00 },
+  { "adaptor": "ZRD22DA", "price_inr": 1105.00, "price_usd": 14.00 },
+  { "adaptor": "ZRD24DA", "price_inr": 1932.00, "price_usd": 23.00 },
+  { "adaptor": "ZRD26DA", "price_inr": 1932.00, "price_usd": 23.00 },
+  { "adaptor": "ZRD28DA", "price_inr": 3578.00, "price_usd": 43.00 },
+  { "adaptor": "ZRD30DA", "price_inr": 3578.00, "price_usd": 43.00 },
+  { "adaptor": "ZRD32DA", "price_inr": 3578.00, "price_usd": 43.00 },
+  { "adaptor": "ZRD34DA", "price_inr": 3578.00, "price_usd": 43.00 },
+  { "adaptor": "ZRD36DA", "price_inr": 4954.00, "price_usd": 59.00 }
+]

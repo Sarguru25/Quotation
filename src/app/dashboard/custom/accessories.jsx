@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { PackagePlus, Plus, CheckCircle2, ChevronDown } from 'lucide-react';
-import accessoriesData from "@/data/accessories.json";
-
 const categoryMap = {
   AFR: [
     "ZOFR", "ZOFR-02-S3RP0", "ZOFR-02-D3RP0", "ZOFR-01-S3RP0", "ZOFR-01-D3RP0", "ZOFR-02-S3RP0F", "ZOFR-02-D3RP0F"
@@ -26,6 +24,26 @@ export default function Accessories({ onSave, editProduct, onCancel }) {
   const [quantity, setQuantity] = useState(1);
   const [discount, setDiscount] = useState(0);
 
+  // ========== DATABASE DATA ==========
+  const [dbAccessories, setDbAccessories] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAccessories = async () => {
+      try {
+        setIsLoading(true);
+        const res = await fetch('/api/accessory-prices');
+        const json = await res.json();
+        if (json.success) setDbAccessories(json.data);
+      } catch (error) {
+        console.error("Failed to fetch accessories", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAccessories();
+  }, []);
+
   // Populate from editProduct
   useEffect(() => {
     if (editProduct && editProduct.productCategory === 'Accessories') {
@@ -39,7 +57,7 @@ export default function Accessories({ onSave, editProduct, onCancel }) {
 
   // Derived values
   const availableModels = categoryMap[accessoryType] || [];
-  const selectedAccessory = accessoriesData.find(a => a.model === model) || accessoriesData.find(a => a.model === availableModels[0]);
+  const selectedAccessory = dbAccessories.find(a => a.model === model) || dbAccessories.find(a => a.model === availableModels[0]);
   
   const unitPriceTotal = selectedAccessory?.price_inr || 0;
   const discountAmount = (unitPriceTotal * (parseFloat(discount) || 0)) / 100;
@@ -123,7 +141,7 @@ export default function Accessories({ onSave, editProduct, onCancel }) {
             <div className="relative">
               <select value={model} onChange={(e) => setModel(e.target.value)} className={selectClass}>
                 {availableModels.map((m, idx) => {
-                  const accData = accessoriesData.find(a => a.model === m);
+                  const accData = dbAccessories.find(a => a.model === m);
                   const price = accData?.price_inr || 0;
                   return (
                     <option key={idx} value={m}>{m} - ₹{price}</option>

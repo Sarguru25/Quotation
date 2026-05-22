@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import SendEmailModal from "./SendEmailModal";
+import ShareLinkModal from "./ShareLinkModal";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac/permissions";
 
 export default function QuotationActionBar({ quote }) {
@@ -18,6 +19,7 @@ export default function QuotationActionBar({ quote }) {
 
   const [loadingAction, setLoadingAction] = useState(null);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const status = quote.status?.toLowerCase();
   
@@ -102,6 +104,14 @@ export default function QuotationActionBar({ quote }) {
             Download PDF
           </button>
 
+          <button
+            onClick={() => setIsShareModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+            Share Link
+          </button>
+
           {canSend && (
             <button
               onClick={() => setIsEmailModalOpen(true)}
@@ -155,6 +165,12 @@ export default function QuotationActionBar({ quote }) {
           quote={quote} 
         />
       )}
+
+      <ShareLinkModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        quoteId={quote.estimate_id}
+      />
     </div>
   );
 }

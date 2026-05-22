@@ -5,11 +5,11 @@ import { NextResponse } from "next/server";
 export async function PUT(req, { params }) {
   try {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
 
     const price = await ActuatorPriceSA.findByIdAndUpdate(id, body, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     });
 
@@ -25,7 +25,7 @@ export async function PUT(req, { params }) {
 export async function DELETE(req, { params }) {
   try {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
 
     const deletedPrice = await ActuatorPriceSA.findByIdAndDelete(id);
 

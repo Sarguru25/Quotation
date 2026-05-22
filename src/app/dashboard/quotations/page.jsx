@@ -52,6 +52,7 @@ export default function QuotationsPage() {
   const [customers, setCustomers] = useState([]);
   const [items, setItems] = useState([]);
   const [taxes, setTaxes] = useState([]);
+  const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
@@ -71,6 +72,7 @@ export default function QuotationsPage() {
     discount_percent: 0,
     adjustment: 0,
     line_items: [{ item_id: "", name: "", description: "", quantity: 1, rate: 0, tax_id: "" }],
+    cf_quotation_creater: "",
   };
 
   const [form, setForm] = useState(initialFormState);
@@ -124,6 +126,16 @@ export default function QuotationsPage() {
     }
   }
 
+  async function fetchUsers() {
+    try {
+      const res = await fetch("/api/users", { cache: "no-store" });
+      const data = await res.json();
+      setUsers(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to fetch users:", err);
+    }
+  }
+
   // Helper to get tax percentage from tax_id
   function getTaxPercentage(taxId) {
     if (!taxId) return 0;
@@ -136,6 +148,7 @@ export default function QuotationsPage() {
     fetchCustomers();
     fetchItems();
     fetchTaxes();
+    fetchUsers();
 
     // Check for pending items from Actuators conversion
     const urlParams = new URLSearchParams(window.location.search);
@@ -274,6 +287,7 @@ export default function QuotationsPage() {
             rate: item.rate || 0,
             tax_id: item.tax_id || "",
           })) || [{ item_id: "", name: "", description: "", quantity: 1, rate: 0, tax_id: "" }],
+          cf_quotation_creater: fullQuote.custom_fields?.find(cf => cf.api_name === "cf_quotation_creater")?.value || "",
         });
       }
     } catch (error) { console.error(error); }
@@ -505,6 +519,18 @@ export default function QuotationsPage() {
                 {/* Reference# */}
                 <div className="md:col-span-3 flex items-center md:justify-end"><label className="text-sm font-medium text-gray-700">Reference#</label></div>
                 <div className="md:col-span-6"><input type="text" name="reference_number" value={form.reference_number} onChange={handleChange} className="w-full border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500" /></div>
+                <div className="md:col-span-3"></div>
+
+                {/* Quotation Creator */}
+                <div className="md:col-span-3 flex items-center md:justify-end"><label className="text-sm font-medium text-gray-700">Creator</label></div>
+                <div className="md:col-span-6">
+                  <select name="cf_quotation_creater" value={form.cf_quotation_creater || ""} onChange={handleChange} className="w-full border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500 bg-white">
+                    <option value="">Select Creator</option>
+                    {users.map(u => (
+                      <option key={u._id} value={u._id}>{u.name}</option>
+                    ))}
+                  </select>
+                </div>
                 <div className="md:col-span-3"></div>
 
                 {/* Estimate Date & Expiry */}

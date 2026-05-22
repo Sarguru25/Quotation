@@ -19,7 +19,8 @@ export default withAuth(
       { prefix: "/dashboard/customers", requiredPerm: "customer.view" },
       { prefix: "/dashboard/actuators", requiredPerm: "product.view" },
       { prefix: "/dashboard/items", requiredPerm: "product.view" },
-      { prefix: "/dashboard/custom", requiredPerm: "product.view" },
+      { prefix: "/dashboard/custom", requiredPerm: "customquote.view" },
+      { prefix: "/dashboard/priceData", requiredPerm: "pricedata.view" },
     ];
 
     for (const check of routeChecks) {
