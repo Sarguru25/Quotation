@@ -131,7 +131,7 @@ export default function AccessoriesTab({ canManage }) {
   const filteredData = (data || []).filter((item) => {
     return (item.model || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
            (item.description || "").toLowerCase().includes(searchTerm.toLowerCase());
-  });
+  }).sort((a, b) => (a.model || "").localeCompare(b.model || ""));
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mt-4">

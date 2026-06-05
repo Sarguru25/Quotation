@@ -11,7 +11,7 @@ export async function GET(req, { params }) {
     const accessToken = await getZohoAccessToken();
 
     const response = await axios.get(
-      `https://www.zohoapis.in/books/v3/items/${id}`,
+      `https://www.zohoapis.com/books/v3/items/${id}`,
       {
         headers: {
           Authorization: `Zoho-oauthtoken ${accessToken}`,
@@ -52,7 +52,7 @@ export async function PUT(req, { params }) {
     if (body.purchase_account_id) itemPayload.purchase_account_id = body.purchase_account_id;
 
     const response = await axios.put(
-      `https://www.zohoapis.in/books/v3/items/${id}`,
+      `https://www.zohoapis.com/books/v3/items/${id}`,
       itemPayload,
       {
         headers: {
@@ -84,7 +84,7 @@ export async function DELETE(req, { params }) {
     const accessToken = await getZohoAccessToken();
 
     await axios.delete(
-      `https://www.zohoapis.in/books/v3/items/${id}`,
+      `https://www.zohoapis.com/books/v3/items/${id}`,
       {
         headers: {
           Authorization: `Zoho-oauthtoken ${accessToken}`,

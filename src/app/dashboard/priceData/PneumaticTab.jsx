@@ -204,7 +204,7 @@ export default function PneumaticTab({ canManage }) {
 
   const currentData = activeTab === "DA" ? dataDA : dataSA;
 
-  const uniqueSeries = ["All", ...new Set((currentData || []).map(item => item?.series).filter(Boolean))];
+  const uniqueSeries = ["All", ...Array.from(new Set((currentData || []).map(item => item?.series).filter(Boolean))).sort()];
 
   const filteredData = (currentData || []).filter((item) => {
     const matchesSearch = (item.model || "").toLowerCase().includes(searchTerm.toLowerCase());
@@ -215,6 +215,19 @@ export default function PneumaticTab({ canManage }) {
         : item.match_status === matchStatusFilter;
         
     return matchesSearch && matchesSeries && matchesStatus;
+  }).sort((a, b) => {
+    // Group by series first, so all ZRA are together, then ZRB, etc.
+    const seriesA = a.series || "";
+    const seriesB = b.series || "";
+    if (seriesA !== seriesB) {
+      return seriesA.localeCompare(seriesB);
+    }
+
+    // Then sort by sr_no if available, otherwise model
+    if (a.sr_no !== undefined && b.sr_no !== undefined) {
+      return a.sr_no - b.sr_no;
+    }
+    return (a.model || "").localeCompare(b.model || "");
   });
 
   return (

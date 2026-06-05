@@ -4,8 +4,22 @@ import { zohoFetch } from "./client";
  * Get all customers (contacts)
  */
 export async function getCustomers(params = {}) {
-  const data = await zohoFetch("/contacts", { params });
-  return data.contacts || [];
+  let allContacts = [];
+  let page = 1;
+  let hasMore = true;
+
+  while (hasMore) {
+    const data = await zohoFetch("/contacts", { params: { ...params, page, per_page: 200 } });
+    allContacts = allContacts.concat(data.contacts || []);
+    
+    if (data.page_context && data.page_context.has_more_page) {
+      page++;
+    } else {
+      hasMore = false;
+    }
+  }
+
+  return allContacts;
 }
 
 /**

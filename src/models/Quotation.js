@@ -1,41 +1,32 @@
 import mongoose from 'mongoose';
 
-const ItemSchema = new mongoose.Schema({
-  itemName: { type: String, required: true },
-  quantity: { type: Number, required: true },
-  rate: { type: Number, required: true },
-  total: { type: Number, required: true }
+const QuotationLineItemSchema = new mongoose.Schema({
+  item_id: { type: String },
+  name: { type: String },
+  quantity: { type: Number },
+  rate: { type: Number },
+  tax_percentage: { type: Number },
+  item_total: { type: Number }
 });
 
 const QuotationSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-  },
-  customerName: {
-    type: String,
-    required: true,
-  },
-  items: [ItemSchema],
-  totalAmount: {
-    type: Number,
-    required: true,
-    default: 0
-  },
-  notes: {
-    type: String,
-    default: ""
-  },
-  status: {
-    type: String,
-    enum: ['Draft', 'Sent', 'Approved'],
-    default: 'Draft'
-  },
-  zohoQuoteId: {
-    type: String,
-    default: null
-  }
+  zoho_estimate_id: { type: String, unique: true, index: true },
+  estimate_number: { type: String },
+  customer_id: { type: String },
+  customer_name: { type: String },
+  date: { type: Date },
+  expiry_date: { type: Date },
+  status: { type: String },
+  currency_code: { type: String },
+  sub_total: { type: Number },
+  tax_total: { type: Number },
+  total: { type: Number },
+  salesperson_name: { type: String },
+  notes: { type: String },
+  terms: { type: String },
+  line_items: [QuotationLineItemSchema],
+  syncedAt: { type: Date, default: Date.now },
+  rawZohoData: { type: mongoose.Schema.Types.Mixed }
 }, { timestamps: true });
 
 export default mongoose.models.Quotation || mongoose.model('Quotation', QuotationSchema);

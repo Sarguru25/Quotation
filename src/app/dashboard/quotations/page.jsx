@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { RefreshCcw, Plus, X, Trash2, Edit, FileText, Search, ChevronRight, AlertCircle, ListPlus } from "lucide-react";  
+import { useEffect, useState, useRef } from "react";
+import { RefreshCcw, Plus, X, Trash2, Edit, FileText, Search, ChevronRight, AlertCircle, ListPlus, DownloadCloud } from "lucide-react";  
 import Link from "next/link";
 
 const STATUS_STYLES = {
@@ -40,6 +40,65 @@ function TextAreaField({ label, ...props }) {
 import { useSession } from "next-auth/react";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac/permissions";
 
+function SearchableSelect({ options, value, onChange, placeholder, className }) {
+  const [query, setQuery] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+  
+  const selectedOption = options.find(o => o.value === value);
+  const displayValue = isOpen ? query : (selectedOption ? selectedOption.label : "");
+
+  const filtered = options.filter(o => (o.label || "").toLowerCase().includes((query || "").toLowerCase()));
+
+  return (
+    <div className="relative w-full" ref={wrapperRef}>
+      <input
+        type="text"
+        className={className || "w-full border border-gray-300 rounded-md text-sm px-3 py-2 text-gray-700 bg-white focus:border-blue-500 outline-none"}
+        placeholder={placeholder}
+        value={displayValue}
+        onChange={e => {
+          setQuery(e.target.value);
+          if (!isOpen) setIsOpen(true);
+        }}
+        onClick={() => {
+           setQuery("");
+           setIsOpen(true);
+        }}
+      />
+      {isOpen && (
+        <div className="absolute z-[100] w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+          {filtered.length > 0 ? filtered.map((o, idx) => (
+            <div
+              key={`${o.value}-${idx}`}
+              className="px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 text-gray-700 text-left"
+              onClick={() => {
+                onChange(o.value);
+                setQuery("");
+                setIsOpen(false);
+              }}
+            >
+              {o.label}
+            </div>
+          )) : (
+            <div className="px-3 py-2 text-sm text-gray-500 text-left">No results found</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function QuotationsPage() {
   const { data: session } = useSession();
   const userPermissions = session?.user?.permissions || [];
@@ -54,6 +113,7 @@ export default function QuotationsPage() {
   const [taxes, setTaxes] = useState([]);
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -82,12 +142,18 @@ export default function QuotationsPage() {
     setTimeout(() => setToast(null), 3500);
   }
 
-  async function fetchQuotes() {
+  async function fetchQuotes(isFull = false) {
     try {
       setLoading(true);
-      const res = await fetch("/api/zoho/quotes", { cache: "no-store" });
-      const data = await res.json();
-      setQuotes(Array.isArray(data) ? data : []);
+      const url = "/api/zoho/quotes";
+      const res = await fetch(url, { cache: "no-store" });
+      const response = await res.json();
+      
+      if (response.data && Array.isArray(response.data)) {
+        setQuotes(response.data);
+      } else {
+        setQuotes(Array.isArray(response) ? response : []);
+      }
     } catch (err) {
       console.error(err);
       setQuotes([]);
@@ -99,18 +165,30 @@ export default function QuotationsPage() {
   async function fetchCustomers() {
     try {
       const res = await fetch("/api/zoho/customers", { cache: "no-store" });
-      const data = await res.json();
-      setCustomers(Array.isArray(data) ? data : []);
+      const response = await res.json();
+      if (response.data && Array.isArray(response.data)) {
+        setCustomers(response.data);
+        return response.data;
+      } else {
+        const arr = Array.isArray(response) ? response : [];
+        setCustomers(arr);
+        return arr;
+      }
     } catch (err) {
       console.error("Failed to fetch customers:", err);
+      return [];
     }
   }
 
   async function fetchItems() {
     try {
       const res = await fetch("/api/zoho/items", { cache: "no-store" });
-      const data = await res.json();
-      setItems(Array.isArray(data) ? data : []);
+      const response = await res.json();
+      if (response.data && Array.isArray(response.data)) {
+        setItems(response.data);
+      } else {
+        setItems(Array.isArray(response) ? response : []);
+      }
     } catch (err) {
       console.error("Failed to fetch items:", err);
     }
@@ -119,8 +197,12 @@ export default function QuotationsPage() {
   async function fetchTaxes() {
     try {
       const res = await fetch("/api/zoho/taxes", { cache: "no-store" });
-      const data = await res.json();
-      setTaxes(Array.isArray(data) ? data : []);
+      const response = await res.json();
+      if (response.data && Array.isArray(response.data)) {
+        setTaxes(response.data);
+      } else {
+        setTaxes(Array.isArray(response) ? response : []);
+      }
     } catch (err) {
       console.error("Failed to fetch taxes:", err);
     }
@@ -145,21 +227,20 @@ export default function QuotationsPage() {
 
   useEffect(() => {
     fetchQuotes();
-    fetchCustomers();
-    fetchItems();
-    fetchTaxes();
-    fetchUsers();
 
     // Check for pending items from Actuators conversion
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get("new") === "true") {
       const pendingItems = localStorage.getItem("pending_quotation_items");
+      const prefillCustomerId = urlParams.get("customerId");
+      
       if (pendingItems) {
         try {
           const items = JSON.parse(pendingItems);
           setForm(prev => ({
             ...prev,
-            line_items: items
+            line_items: items,
+            customer_id: prefillCustomerId || prev.customer_id
           }));
           if (canCreate) {
              setOpen(true);
@@ -169,13 +250,57 @@ export default function QuotationsPage() {
         } catch (e) {
           console.error("Failed to load pending quotation items:", e);
         }
+      } else if (prefillCustomerId) {
+         setForm(prev => ({
+            ...prev,
+            customer_id: prefillCustomerId
+         }));
+         if (canCreate) {
+             setOpen(true);
+         }
+         window.history.replaceState({}, '', '/dashboard/quotations');
+      } else if (canCreate) {
+         setOpen(true);
+         window.history.replaceState({}, '', '/dashboard/quotations');
       }
     }
   }, [canCreate]);
 
+  // useEffect(() => {
+  //   if (open) {
+  //     // if (customers.length === 0) fetchCustomers();
+  //     // if (items.length === 0) fetchItems();
+  //     // if (taxes.length === 0) fetchTaxes();
+  //     // if (users.length === 0) fetchUsers();
+  //     fetchCustomers();
+  //     fetchItems();
+  //     fetchTaxes();
+  //     fetchUsers();
+  //   }
+  // // }, [open, customers.length, items.length, taxes.length, users.length]);
+  // }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      fetchCustomers().then((fetchedCustomers) => {
+          // If we have a prefilled customer_id, update the customer_name automatically
+          if (form.customer_id && !form.customer_name) {
+              const cust = fetchedCustomers?.find(c => (c.zoho_customer_id || c._id) === form.customer_id);
+              if (cust) {
+                  setForm(prev => ({ ...prev, customer_name: cust.customer_name || cust.contact_name || "" }));
+              }
+          }
+      });
+      fetchItems();
+      fetchTaxes();
+      fetchUsers();
+    }
+  }, [open]);
+
   const formatDate = (date) => {
     if (!date) return "—";
-    const [y, m, d] = date.split("-");
+    const dateStr = date.split("T")[0];
+    const [y, m, d] = dateStr.split("-");
     return `${d}/${m}/${y}`;
   };
 
@@ -262,9 +387,10 @@ export default function QuotationsPage() {
   }
 
   async function openEditModal(quote) {
-    setEditingId(quote.estimate_id);
+    const id = quote._id || quote.zoho_estimate_id || quote.estimate_id;
+    setEditingId(id);
     try {
-      const res = await fetch(`/api/zoho/quotes/${quote.estimate_id}`);
+      const res = await fetch(`/api/zoho/quotes/${id}`);
       const fullQuote = await res.json();
       if (fullQuote) {
         setForm({
@@ -295,10 +421,16 @@ export default function QuotationsPage() {
   }
 
   const filtered = quotes.filter(
-    (q) =>
-      q.estimate_number?.toLowerCase().includes(search.toLowerCase()) ||
-      q.customer_name?.toLowerCase().includes(search.toLowerCase()) ||
-      q.reference_number?.toLowerCase().includes(search.toLowerCase())
+    (q) => {
+      const matchesSearch = 
+        q.estimate_number?.toLowerCase().includes(search.toLowerCase()) ||
+        q.customer_name?.toLowerCase().includes(search.toLowerCase()) ||
+        q.reference_number?.toLowerCase().includes(search.toLowerCase());
+      
+      const matchesStatus = statusFilter === "all" || q.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    }
   );
 
   if (loading) {
@@ -337,12 +469,6 @@ export default function QuotationsPage() {
         </div>
         <div className="flex gap-2">
           {canCreate && (
-            <Link className="btn-press flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm shadow-indigo-200 transition-colors" href="/dashboard/actuators">
-              <ListPlus size={16} />
-              Custom Items
-            </Link>
-          )}
-          {canCreate && (
             <button
               onClick={() => { setEditingId(null); setForm(initialFormState); setOpen(true); }}
               className="btn-press flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm shadow-indigo-200 transition-colors"
@@ -352,7 +478,15 @@ export default function QuotationsPage() {
             </button>
           )}
           <button
-            onClick={fetchQuotes}
+            onClick={() => fetchQuotes(true)}
+            className="btn-press flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+            title="Fetch all quotations from Zoho Books"
+          >
+            <DownloadCloud size={16} />
+            Full Fetch
+          </button>
+          <button
+            onClick={() => fetchQuotes(false)}
             className="btn-press flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
           >
             <RefreshCcw size={16} />
@@ -361,16 +495,30 @@ export default function QuotationsPage() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative mb-5">
-        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input
-          type="text"
-          placeholder="Search by quote no., customer, or reference..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="input-field w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white text-slate-800 placeholder:text-slate-400"
-        />
+      {/* Search and Filter */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-5">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search by quote no., customer, or reference..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="input-field w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white text-slate-800 placeholder:text-slate-400"
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="w-full sm:w-48 px-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white text-slate-800 outline-none focus:border-indigo-500"
+        >
+          <option value="all">All Statuses</option>
+          <option value="draft">Draft</option>
+          <option value="sent">Sent</option>
+          <option value="accepted">Accepted</option>
+          <option value="declined">Declined</option>
+          <option value="expired">Expired</option>
+        </select>
       </div>
 
       {/* Table */}
@@ -390,12 +538,14 @@ export default function QuotationsPage() {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filtered.length > 0 ? (
-                filtered.map((q) => (
-                  <tr key={q.estimate_id} className="table-row-hover hover:bg-slate-50/70 group">
+                filtered.map((q) => {
+                  const id = q._id || q.zoho_estimate_id || q.estimate_id;
+                  return (
+                  <tr key={id} className="table-row-hover hover:bg-slate-50/70 group">
                     <td className="px-5 py-4 text-slate-500 text-xs">{formatDate(q.date)}</td>
                     <td className="px-5 py-4">
                       <Link
-                        href={`/dashboard/quotations/${q.estimate_id}`}
+                        href={`/dashboard/quotations/${id}`}
                         className="flex items-center gap-1 font-semibold text-indigo-600 hover:text-indigo-800 group-hover:underline"
                       >
                         <FileText size={13} className="flex-shrink-0" />
@@ -428,7 +578,7 @@ export default function QuotationsPage() {
                         )}
                         {canDelete && (
                           <button
-                            onClick={() => deleteQuotation(q.estimate_id)}
+                            onClick={() => deleteQuotation(id)}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                             title="Delete"
                           >
@@ -438,7 +588,7 @@ export default function QuotationsPage() {
                       </div>
                     </td>
                   </tr>
-                ))
+                )})
               ) : (
                 <tr>
                   <td colSpan="7" className="py-16 text-center">
@@ -455,10 +605,10 @@ export default function QuotationsPage() {
 
       {/* ========== FULL PAGE OVERLAY (ZOHO STYLE) ========== */}
       {open && (
-        <div className="fixed top-0 bottom-0 right-0 left-64 bg-gray-50 flex justify-center items-start overflow-auto z-[50]">
+        <div className="fixed top-0 bottom-0 right-0 left-0 md:left-64 bg-gray-50 flex justify-center items-start overflow-auto z-[50]">
           <div className="bg-white w-full min-h-full relative">
             {/* Header */}
-            <div className="flex justify-between items-center px-8 py-4 border-b border-gray-200 sticky top-0 bg-white z-10 shadow-sm">
+            <div className="flex justify-between items-center px-4 md:px-8 py-4 border-b border-gray-200 sticky top-0 bg-white z-10 shadow-sm">
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-gray-600" />
                 <h2 className="text-xl font-semibold text-gray-800 tracking-tight">
@@ -481,25 +631,26 @@ export default function QuotationsPage() {
                   <label className="text-sm font-medium text-red-500">Customer Name*</label>
                 </div>
                 <div className="md:col-span-6 flex items-center">
-                  <select
+                  <SearchableSelect
+                    options={customers.map((c) => {
+                      const name = c.customer_name || c.contact_name || "";
+                      return {
+                        value: c.zoho_customer_id || c._id,
+                        label: name + (c.company_name && c.company_name !== name ? ` (${c.company_name})` : "")
+                      };
+                    })}
                     value={form.customer_id}
-                    onChange={(e) => {
-                      const selected = customers.find((c) => c.contact_id === e.target.value);
+                    onChange={(val) => {
+                      const selected = customers.find((c) => (c.zoho_customer_id || c._id) === val);
                       setForm((prev) => ({
                         ...prev,
-                        customer_id: e.target.value,
-                        customer_name: selected?.contact_name || "",
+                        customer_id: val,
+                        customer_name: selected?.customer_name || selected?.contact_name || "",
                       }));
                     }}
+                    placeholder="Select or add a customer"
                     className="w-full border border-gray-300 rounded-l-md text-sm px-3 py-2 text-gray-700 bg-white focus:border-blue-500 outline-none"
-                  >
-                    <option value="">Select or add a customer</option>
-                    {customers.map((c) => (
-                      <option key={c.contact_id} value={c.contact_id}>
-                        {c.contact_name}{c.company_name && c.company_name !== c.contact_name ? ` (${c.company_name})` : ""}
-                      </option>
-                    ))}
-                  </select>
+                  />
                   <button className="bg-blue-500 hover:bg-blue-600 p-2 rounded-r-md text-white transition-colors">
                     <Search size={18}/>
                   </button>
@@ -573,11 +724,14 @@ export default function QuotationsPage() {
                       <tr key={index} className="hover:bg-gray-50 transition-colors group">
                         <td className="px-5 py-3 align-top">
                           {/* Item dropdown */}
-                          <select
+                          <SearchableSelect
+                            options={items.map(zohoItem => ({
+                              value: zohoItem.zoho_item_id || zohoItem.item_id || zohoItem._id,
+                              label: zohoItem.name
+                            }))}
                             value={item.item_id || ""}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              const selectedItem = items.find(i => i.item_id === val);
+                            onChange={(val) => {
+                              const selectedItem = items.find(i => (i.zoho_item_id || i.item_id || i._id) === val);
                               const updated = [...form.line_items];
                               if (selectedItem) {
                                 updated[index] = {
@@ -592,13 +746,9 @@ export default function QuotationsPage() {
                               }
                               setForm(prev => ({ ...prev, line_items: updated }));
                             }}
-                            className="w-full bg-transparent border border-gray-200 rounded px-2 py-1.5 text-sm outline-none text-gray-800 font-medium focus:border-blue-500 mb-2"
-                          >
-                            <option value="">Select an item from Zoho</option>
-                            {items.map(zohoItem => (
-                              <option key={zohoItem.item_id} value={zohoItem.item_id}>{zohoItem.name}</option>
-                            ))}
-                          </select>
+                            placeholder="Select an item from Zoho"
+                            className="w-full bg-white border border-gray-200 rounded px-2 py-1.5 text-sm outline-none text-gray-800 font-medium focus:border-blue-500 mb-2"
+                          />
                           {/* Manual item name */}
                           <input
                             type="text"
@@ -705,7 +855,7 @@ export default function QuotationsPage() {
             </div>
 
             {/* Sticky Bottom Bar */}
-            <div className="fixed bottom-0 left-64 right-0 bg-white border-t border-gray-200 px-8 py-4 flex justify-between items-center z-[60] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            <div className="fixed bottom-0 left-0 md:left-64 right-0 bg-white border-t border-gray-200 px-4 md:px-8 py-4 flex justify-between items-center z-[60] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                <div className="flex gap-3">
                   <button className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm font-medium transition-colors shadow-sm">
                     Save as Draft

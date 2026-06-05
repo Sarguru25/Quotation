@@ -35,7 +35,7 @@ export async function POST(req, { params }) {
     };
 
     const zohoRes = await axios.post(
-      "https://www.zohoapis.in/books/v3/estimates",
+      "https://www.zohoapis.com/books/v3/estimates",
       zohoPayload,
       {
         headers: {

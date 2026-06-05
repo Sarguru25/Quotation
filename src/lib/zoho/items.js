@@ -4,8 +4,22 @@ import { zohoFetch } from "./client";
  * Get all items (products/services)
  */
 export async function getItems(params = {}) {
-  const data = await zohoFetch("/items", { params });
-  return data.items || [];
+  let allItems = [];
+  let page = 1;
+  let hasMore = true;
+
+  while (hasMore) {
+    const data = await zohoFetch("/items", { params: { ...params, page, per_page: 200 } });
+    allItems = allItems.concat(data.items || []);
+    
+    if (data.page_context && data.page_context.has_more_page) {
+      page++;
+    } else {
+      hasMore = false;
+    }
+  }
+
+  return allItems;
 }
 
 /**

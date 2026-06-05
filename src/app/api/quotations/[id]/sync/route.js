@@ -12,7 +12,7 @@ export async function GET() {
     const accessToken = await getZohoAccessToken();
 
     const response = await axios.get(
-      "https://www.zohoapis.in/books/v3/estimates",
+      "https://www.zohoapis.com/books/v3/estimates",
       {
         headers: {
           Authorization: `Zoho-oauthtoken ${accessToken}`,

@@ -1,5 +1,5 @@
-export const ZOHO_BASE_URL = "https://www.zohoapis.in/books/v3";
-export const ZOHO_AUTH_URL = "https://accounts.zoho.in/oauth/v2/token";
+export const ZOHO_BASE_URL = "https://www.zohoapis.com/books/v3";
+export const ZOHO_AUTH_URL = "https://accounts.zoho.com/oauth/v2/token";
 
 export const ZOHO_CONFIG = {
   get organizationId() {

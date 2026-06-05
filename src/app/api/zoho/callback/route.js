@@ -19,7 +19,7 @@ export async function GET(req) {
     console.log("CODE:", code);
 
     const response = await axios.post(
-      "https://accounts.zoho.in/oauth/v2/token",
+      "https://accounts.zoho.com/oauth/v2/token",
       null,
       {
         params: {

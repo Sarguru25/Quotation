@@ -213,7 +213,7 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
 
     if (inputTorqueNum !== 0) {
       newActualFOS = Number(
-        (((newOutputTorque - inputTorqueNum) / inputTorqueNum)).toFixed(1) * 100
+        (((newOutputTorque - inputTorqueNum) / inputTorqueNum) * 100).toFixed(1)
       );
     }
 
@@ -257,15 +257,19 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
 
     // Operation Principle
     setOutputOperationPrinciple(
-      actuatorType === "Double Acting (DA)"
+      failPosition === "Fail Stay - Double Acting"
         ? "Air-to-open and air-to-close (Double Acting)"
-        : "Air-to-open and air-to-close (Single Acting)"
+        : failPosition === "Fail Open - Single Acting"
+        ? "Spring-to-open and air-to-close (Single Acting)"
+        : failPosition === "Fail Close - Single Acting"
+        ? "Air-to-open and spring-to-close (Single Acting)"
+        : ""
     );
 
     // Product is fixed
     setOutputProduct("Pneumatic Actuator");
     // Material, Temp, Protection, Travel, Media are static (could be overridden)
-  }, [actuatorType, doubleActingMatch, singleActingMatch, airPressureNum, inputTorqueNum, adaptorRequired, valveType]);
+  }, [actuatorType, doubleActingMatch, singleActingMatch, airPressureNum, inputTorqueNum, adaptorRequired, valveType, failPosition]);
 
   // Recalculate whenever inputs that affect formulas change
   useEffect(() => {
@@ -324,13 +328,13 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
   }, [editProduct]);
 
   const addToQuotation = () => {
-    const description = `Model = ${outputModel}\nSize = ${size}\nTorque w/ FOS = ${inputTorqueWithFOS.toFixed(1)}\nAir Pressure = ${airPressure}\nActuator Type = ${outputType}`;
+    const description = `Model = ${outputModel}\nSize = ${size}\nTorque w/ FOS = ${inputTorqueWithFOS.toFixed(1)}\nAir Pressure = ${airPressure}\nActuator Type = ${outputType}\nOperation Principle = ${outputOperationPrinciple}`;
 
     const newProduct = {
       id: editProduct ? editProduct.id : Date.now(),
       productCategory: 'Pneumatic Actuator',
       description,
-      detailsSummary: `Valve: ${valveType}, Size: ${size}\nTorque: ${inputTorqueWithFOS.toFixed(1)}, Air: ${airPressure}`,
+      detailsSummary: `Valve: ${valveType}, Size: ${size}\nTorque: ${inputTorqueWithFOS.toFixed(1)}, Air: ${airPressure}\nOperation: ${outputOperationPrinciple}`,
       valveType,
       size,
       tagNo,
@@ -379,7 +383,7 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
   const shaftProfileOptions = ["Double Square", "Double D", "Key Way"];
   const safetyOptions = ["20%", "25%", "30%", "40%", "50%", "100%"];
   const airPressureOptions = ["2", "2.5", "3", "4", "4.5", "5", "5.5", "6"];
-  const failPositionOptions = ["Normally Open - Single Acting", "Normally Close - Single Acting", "Fail Stay - Double Acting"];
+  const failPositionOptions = ["Fail Open - Single Acting", "Fail Close - Single Acting", "Fail Stay - Double Acting"];
   const actuatorSeriesOptions = ["ZRA", "ZRB", "ZRC", "ZRD"];
   const accessoriesAFROptions = ["", "ZOFR", "ZOFR-02-S3RP0", "ZOFR-02-D3RP0", "ZOFR-01-S3RP0", "ZOFR-01-D3RP0", "ZOFR-02-S3RP0F", "ZOFR-02-D3RP0F"];
   const accessoriesLSOptions = ["", "ZLS100P2", "ZLS210M2", "ZLS 220", "ZLS230", "ZLS500M4", "ZLS500M2", "ZLS910P2", "ZLS910M2"];
@@ -667,13 +671,17 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
 
               {[
                 { label: "Output Torque", val: outputTorque, setter: setOutputTorque },
-                { label: "Actual FOS", val: outputActualFOS, setter: setOutputActualFOS, displayVal: outputActualFOS.toFixed(1) },
-                { label: "Actuator Price (₹)", val: outputActuatorUnitPrice, setter: setOutputActuatorUnitPrice },
-                { label: "Adaptor Price (₹)", val: outputAdaptorPrice, setter: setOutputAdaptorPrice },
+                { label: "Actual FOS %", val: outputActualFOS, setter: setOutputActualFOS, displayVal: outputActualFOS.toFixed(1), suffix: "%" },
+                { label: "Actuator Price", val: outputActuatorUnitPrice, setter: setOutputActuatorUnitPrice, prefix: "₹" },
+                { label: "Adaptor Price", val: outputAdaptorPrice, setter: setOutputAdaptorPrice, prefix: "₹" },
               ].map((item, idx) => (
                 <div key={idx} className="flex flex-col">
                   <label className="font-medium text-gray-600 text-xs mb-1">{item.label}</label>
-                  <input type="number" step="any" value={item.displayVal ?? item.val} onChange={(e) => item.setter(parseFloat(e.target.value) || 0)} className="bg-white border border-emerald-200 p-2 rounded-lg font-semibold text-emerald-800 focus:ring-2 focus:ring-emerald-500/50 outline-none transition-all" />
+                  <div className="relative flex items-center">
+                    {item.prefix && <span className="absolute left-3 text-emerald-700 font-bold pointer-events-none">{item.prefix}</span>}
+                    <input type="number" step="any" value={item.displayVal ?? item.val} onChange={(e) => item.setter(parseFloat(e.target.value) || 0)} className={`w-full bg-white border border-emerald-200 p-2 rounded-lg font-semibold text-emerald-800 focus:ring-2 focus:ring-emerald-500/50 outline-none transition-all ${item.prefix ? 'pl-8' : ''} ${item.suffix ? 'pr-8' : ''}`} />
+                    {item.suffix && <span className="absolute right-3 text-emerald-700 font-bold pointer-events-none">{item.suffix}</span>}
+                  </div>
                 </div>
               ))}
             </div>

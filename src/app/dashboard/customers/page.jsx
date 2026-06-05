@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { RefreshCcw, Plus, X, Trash2, Edit, Users, Search, AlertCircle, Mail, Phone, Building2, Eye } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { PERMISSIONS, hasPermission } from "@/lib/rbac/permissions";
 
 function InputField({ label, ...props }) {
   return (
@@ -19,6 +21,12 @@ function InputField({ label, ...props }) {
 
 export default function CustomersPage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const userPermissions = session?.user?.permissions || [];
+  const canCreate = hasPermission(userPermissions, PERMISSIONS.CUSTOMER.CREATE);
+  const canEdit = hasPermission(userPermissions, PERMISSIONS.CUSTOMER.EDIT);
+  const canDelete = hasPermission(userPermissions, PERMISSIONS.CUSTOMER.DELETE);
+
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -34,8 +42,14 @@ export default function CustomersPage() {
     try {
       setLoading(true);
       const res = await fetch("/api/zoho/customers", { cache: "no-store" });
-      const data = await res.json();
-      setCustomers(Array.isArray(data) ? data : []);
+      const response = await res.json();
+      
+      // Handle the new paginated DB response structure { data, meta }
+      if (response.data && Array.isArray(response.data)) {
+        setCustomers(response.data);
+      } else {
+        setCustomers(Array.isArray(response) ? response : []);
+      }
     } catch (err) {
       console.error(err);
       setCustomers([]);
@@ -62,9 +76,9 @@ export default function CustomersPage() {
 
   const filtered = customers.filter(
     (c) =>
-      c.contact_name?.toLowerCase().includes(search.toLowerCase()) ||
-      c.company_name?.toLowerCase().includes(search.toLowerCase()) ||
-      c.email?.toLowerCase().includes(search.toLowerCase())
+      (c.customer_name || c.contact_name || "")?.toLowerCase().includes(search.toLowerCase()) ||
+      (c.company_name || "")?.toLowerCase().includes(search.toLowerCase()) ||
+      (c.email || "")?.toLowerCase().includes(search.toLowerCase())
   );
 
   function getInitials(name) {
@@ -115,12 +129,14 @@ export default function CustomersPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Link
-            href="/dashboard/customers/new"
-            className="btn-press flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm shadow-indigo-200 transition-colors"
-          >
-            <Plus size={16} /> New Customer
-          </Link>
+          {canCreate && (
+            <Link
+              href="/dashboard/customers/new"
+              className="btn-press flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm shadow-indigo-200 transition-colors"
+            >
+              <Plus size={16} /> New Customer
+            </Link>
+          )}
           <button
             onClick={fetchCustomers}
             className="btn-press flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
@@ -157,21 +173,24 @@ export default function CustomersPage() {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filtered.length > 0 ? (
-                filtered.map((c) => (
+                filtered.map((c) => {
+                  const id = c._id || c.zoho_customer_id || c.contact_id;
+                  const name = c.customer_name || c.contact_name || "";
+                  return (
                   <tr
-                    key={c.contact_id}
+                    key={id}
                     className="table-row-hover hover:bg-indigo-50/50 cursor-pointer transition-colors"
                     onClick={(e) => {
                       if (e.target.closest("button")) return;
-                      router.push(`/dashboard/customers/${c.contact_id}`);
+                      router.push(`/dashboard/customers/${id}`);
                     }}
                   >
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full ${avatarColor(c.contact_name)} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
-                          {getInitials(c.contact_name)}
+                        <div className={`w-8 h-8 rounded-full ${avatarColor(name)} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+                          {getInitials(name)}
                         </div>
-                        <span className="font-medium text-slate-800">{c.contact_name}</span>
+                        <span className="font-medium text-slate-800">{name}</span>
                       </div>
                     </td>
                     <td className="px-5 py-3.5">
@@ -201,30 +220,34 @@ export default function CustomersPage() {
                     <td className="px-5 py-3.5 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
-                          onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/customers/${c.contact_id}`); }}
+                          onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/customers/${id}`); }}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
                           title="View"
                         >
                           <Eye size={15} />
                         </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/customers/${c.contact_id}/edit`); }}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                          title="Edit"
-                        >
-                          <Edit size={15} />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); deleteCustomer(c.contact_id); }}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                        {canEdit && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/customers/${id}/edit`); }}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                            title="Edit"
+                          >
+                            <Edit size={15} />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); deleteCustomer(id); }}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
-                ))
+                )})
               ) : (
                 <tr>
                   <td colSpan="5" className="py-16 text-center">

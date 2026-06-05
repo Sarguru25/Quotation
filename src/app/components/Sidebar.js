@@ -14,11 +14,14 @@ import {
   ClipboardList,
   ShieldAlert,
   FilePlus,
-  ReceiptIndianRupee
+  ReceiptIndianRupee,
+  X,
+  HatGlasses,
+  Database
 } from "lucide-react";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac/permissions";
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }) {
   const pathname = usePathname();
   const { data: session } = useSession();
 
@@ -33,13 +36,15 @@ export default function Sidebar() {
     { name: "Items", href: "/dashboard/items", icon: ListPlus, requiresAny: [PERMISSIONS.PRODUCT.VIEW] },
     { name: "Users", href: "/dashboard/users", icon: UserCircle, requiresAny: [PERMISSIONS.USER.VIEW] },
     { name: "Roles", href: "/dashboard/roles", icon: ShieldAlert, requiresAny: [PERMISSIONS.ROLE.MANAGE] },
+    { name: "Data Sync", href: "/dashboard/sync", icon: Database, requiresAny: [PERMISSIONS.ROLE.MANAGE] },
     { name: "Price Data", href: "/dashboard/priceData", icon: ReceiptIndianRupee, requiresAny: [PERMISSIONS.PRICE_DATA.VIEW] },
+    { name: "Visits", href: "/dashboard/visits", icon: HatGlasses, requiresAny: [PERMISSIONS.VISIT.VIEW] },
   ];
 
   // Filter links based on permissions
   const navLinks = allLinks.filter(link => {
     if (isAdmin) return true;
-    if (link.requiresAny.length === 0) return true;
+    if (!link.requiresAny || link.requiresAny.length === 0) return true;
     return link.requiresAny.some(perm => hasPermission(userPermissions, perm));
   });
 
@@ -55,14 +60,21 @@ export default function Sidebar() {
       {/* Logo */}
       <div>
         <div className="px-6 py-6 border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-              <FileText size={16} className="text-white" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+                <FileText size={16} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white leading-none">QuoteFlow</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Powered by ZOHO</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-bold text-white leading-none">QuoteFlow</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Powered by ZOHO</p>
-            </div>
+            {onClose && (
+              <button onClick={onClose} className="md:hidden text-slate-400 hover:text-white">
+                <X size={20} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -80,6 +92,7 @@ export default function Sidebar() {
               <Link
                 key={link.name}
                 href={link.href}
+                onClick={onClose}
                 className={`group flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ${
                   isActive
                     ? "bg-indigo-600 text-white shadow-md shadow-indigo-900/50"

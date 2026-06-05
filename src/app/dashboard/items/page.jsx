@@ -87,8 +87,12 @@ export default function ItemsPage() {
     try {
       setLoading(true);
       const res = await fetch("/api/zoho/items");
-      const data = await res.json();
-      setItems(Array.isArray(data) ? data : []);
+      const response = await res.json();
+      if (response.data && Array.isArray(response.data)) {
+        setItems(response.data);
+      } else {
+        setItems(Array.isArray(response) ? response : []);
+      }
     } catch (error) {
       console.error("Failed to fetch items:", error);
       showToast("Failed to fetch items", "error");

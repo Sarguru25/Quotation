@@ -147,7 +147,7 @@ export async function getZohoAccessToken() {
 
   try {
     const response = await fetch(
-      "https://accounts.zoho.in/oauth/v2/token",
+      "https://accounts.zoho.com/oauth/v2/token",
       {
         method: "POST",
         cache: "no-store",

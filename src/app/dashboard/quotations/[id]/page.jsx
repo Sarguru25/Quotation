@@ -12,11 +12,29 @@ const ZOHO_ORGANIZATION_ID = process.env.ZOHO_ORGANIZATION_ID;
 
 async function getQuotation(id) {
   try {
+    await dbConnect();
+    const dbQuote = await Quotation.findOne({
+      $or: [
+        { zoho_estimate_id: id },
+        ...(id.match(/^[0-9a-fA-F]{24}$/) ? [{ _id: id }] : [])
+      ]
+    }).lean();
+
+    if (!dbQuote) {
+      throw new Error("Quotation not found in database");
+    }
+
+    const realZohoId = dbQuote.zoho_estimate_id;
+    if (!realZohoId) {
+      // Fallback if not synced with Zoho yet
+      return dbQuote.rawZohoData || dbQuote;
+    }
+
     const accessToken = await getZohoAccessToken();
     if (!accessToken) throw new Error("Failed to get Zoho Access Token");
 
     const response = await fetch(
-      `https://www.zohoapis.in/books/v3/estimates/${id}?organization_id=${ZOHO_ORGANIZATION_ID}`,
+      `https://www.zohoapis.com/books/v3/estimates/${realZohoId}?organization_id=${ZOHO_ORGANIZATION_ID}`,
       {
         method: "GET",
         headers: {
@@ -42,11 +60,22 @@ async function getQuotation(id) {
 export default async function QuoteDetailsPage({ params }) {
   const { id } = await params;
   const quote = await getQuotation(id);
-  
+
   await dbConnect();
-  const localQuote = await Quotation.findOne({ zohoQuoteId: id }).populate('userId', 'name email').lean();
-  const activityLogs = await ActivityLog.find({ "metadata.quotationId": id }).populate('user', 'name email').lean();
-  const publicLink = await PublicQuotationLink.findOne({ quotationId: id }).lean();
+  
+  // Need to resolve realZohoId again for local models since `id` could be MongoDB _id
+  const dbQuoteForLogs = await Quotation.findOne({
+    $or: [
+      { zoho_estimate_id: id },
+      ...(id.match(/^[0-9a-fA-F]{24}$/) ? [{ _id: id }] : [])
+    ]
+  }).lean();
+  
+  const resolvedId = dbQuoteForLogs?.zoho_estimate_id || id;
+  
+  const localQuote = await Quotation.findOne({ zoho_estimate_id: resolvedId }).lean();
+  const activityLogs = await ActivityLog.find({ "metadata.quotationId": resolvedId }).populate('user', 'name email').lean();
+  const publicLink = await PublicQuotationLink.findOne({ quotationId: resolvedId }).lean();
 
   const creatorId = quote.custom_fields?.find(cf => cf.api_name === "cf_quotation_creater")?.value;
   let creatorName = "-";
@@ -65,7 +94,8 @@ export default async function QuoteDetailsPage({ params }) {
 
   const formatDate = (date) => {
     if (!date) return "-";
-    const [year, month, day] = date.split("-");
+    const dateStr = date.split("T")[0];
+    const [year, month, day] = dateStr.split("-");
     return `${day}/${month}/${year}`;
   };
 
@@ -81,7 +111,7 @@ export default async function QuoteDetailsPage({ params }) {
       <div className="w-full max-w-4xl">
         <QuotationActionBar quote={quote} />
       </div>
-      
+
       <div className="bg-white w-full max-w-4xl shadow-xl border relative overflow-hidden print:shadow-none print:border-none print:p-0 mb-6">
 
         {/* Ribbon for Status */}
@@ -99,19 +129,19 @@ export default async function QuoteDetailsPage({ params }) {
         <div className="p-10 pb-0">
           <div className="flex justify-between items-start">
             <div className="ml-12 mt-4">
-              {/* TRUFLOW Logo text */}
               <h1 className="text-4xl">
                 <Image src="/TF_logo.png" alt="TruFlow" width={300} height={40} />
               </h1>
             </div>
 
             <div className="text-right text-sm text-gray-700 leading-relaxed">
-              <p className="font-bold text-black">TruFlow Solutions Pvt Ltd</p>
-              <p>S.F.No.617/2H2, Vadakku Thottam, L&T Road,</p>
+              <p className="font-bold text-black">Zeetork Automation & Control Private Limited</p>
+              <p>Company ID : U27103TZ2024PTC032623</p>
+              <p>S.F.No.610/1A, L&T Road Campus Road,</p>
               <p>Malumichampatti Post Office, Madukkarai Taluk,</p>
               <p>Coimbatore Tamil Nadu 641050</p>
               <p>India</p>
-              <p>GSTIN 33AAJCR6720N1Z1</p>
+              <p>GSTIN 33AACCZ4754H1Z7</p>
             </div>
           </div>
 
@@ -244,12 +274,12 @@ export default async function QuoteDetailsPage({ params }) {
               </div>
             )}
 
-            {quote.taxes?.map((tax) => (
-              <div key={tax.tax_id} className="flex justify-between py-2">
+            {quote.taxes?.map((tax, index) => (
+              <div key={`${tax.tax_id}-${index}`} className="flex justify-between py-2">
                 <span className="text-gray-600">{tax.tax_name} ({tax.tax_percentage}%)</span>
                 <span className="text-gray-800">{formatCurrency(tax.tax_amount)}</span>
               </div>
-            ))}
+            ))} 
 
             {quote.adjustment > 0 && (
               <div className="flex justify-between py-2">
@@ -276,7 +306,7 @@ export default async function QuoteDetailsPage({ params }) {
           {quote.terms ? (
             <p className="whitespace-pre-wrap text-gray-600 mb-6 leading-relaxed">{quote.terms}</p>
           ) : (
-            <p className="text-gray-600 mb-6">All our transactions are governed by TruFlow Solutions Pvt Ltd's General Terms and Conditions for Sale which shall be made available upon request.</p>
+            <p className="text-gray-600 mb-6">All our transactions are governed by Zeetork Automation & Control Private Limited's General Terms and Conditions for Sale which shall be made available upon request.</p>
           )}
 
           <div className="mt-8 pt-8 pb-10">
@@ -288,14 +318,14 @@ export default async function QuoteDetailsPage({ params }) {
         </div>
 
       </div>
-      
+
       {publicLink && (
         <div className="w-full max-w-4xl bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6 print:hidden">
           <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
             <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
             Customer Portal Status
           </h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
               <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Link Status</p>

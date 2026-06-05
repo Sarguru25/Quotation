@@ -25,7 +25,7 @@ export async function POST(req) {
     if (body.purchase_account_id) itemPayload.purchase_account_id = body.purchase_account_id;
 
     const response = await axios.post(
-      `https://www.zohoapis.in/books/v3/items`,
+      `https://www.zohoapis.com/books/v3/items`,
       itemPayload,
       {
         headers: {

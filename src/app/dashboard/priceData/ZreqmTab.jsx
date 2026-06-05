@@ -6,10 +6,10 @@ export default function ZreqmTab({ canManage }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  
+
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
-  
+
   const [formData, setFormData] = useState({
     category: "",
     sr_no: "",
@@ -118,7 +118,7 @@ export default function ZreqmTab({ canManage }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      
+
       const json = await res.json();
       if (json.success) {
         closeModal();
@@ -136,12 +136,17 @@ export default function ZreqmTab({ canManage }) {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const uniqueCategories = ["All", ...new Set((data || []).map(item => item?.category).filter(Boolean))];
+  const uniqueCategories = ["All", ...Array.from(new Set((data || []).map(item => item?.category).filter(Boolean))).sort()];
 
   const filteredData = (data || []).filter((item) => {
     const matchesSearch = (item.model || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === "All" || item.category === categoryFilter;
     return matchesSearch && matchesCategory;
+  }).sort((a, b) => {
+    if (a.sr_no !== undefined && b.sr_no !== undefined) {
+      return a.sr_no - b.sr_no;
+    }
+    return (a.model || "").localeCompare(b.model || "");
   });
 
   return (
@@ -248,7 +253,7 @@ export default function ZreqmTab({ canManage }) {
               <h2 className="text-xl font-bold text-gray-900">{editingItem ? `Edit Model` : `Add New Model`}</h2>
               <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 transition-colors p-1"><X className="w-5 h-5" /></button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="p-6">
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="col-span-1">

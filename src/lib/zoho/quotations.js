@@ -4,8 +4,31 @@ import { zohoFetch } from "./client";
  * Get all quotations (estimates)
  */
 export async function getQuotations(params = {}) {
-  const data = await zohoFetch("/estimates", { params });
-  return data.estimates || [];
+  const { full, limit, ...apiParams } = params;
+  let allEstimates = [];
+
+  if (full) {
+    let page = 1;
+    let hasMore = true;
+
+    while (hasMore) {
+      const data = await zohoFetch("/estimates", { params: { ...apiParams, page, per_page: 200 } });
+      allEstimates = allEstimates.concat(data.estimates || []);
+      
+      if (data.page_context && data.page_context.has_more_page) {
+        page++;
+      } else {
+        hasMore = false;
+      }
+    }
+  } else {
+    // Only fetch first page with limit
+    const perPage = limit || 40;
+    const data = await zohoFetch("/estimates", { params: { ...apiParams, page: 1, per_page: perPage } });
+    allEstimates = data.estimates || [];
+  }
+
+  return allEstimates;
 }
 
 /**
