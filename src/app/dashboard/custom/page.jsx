@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { PackagePlus, FileText, Zap, Edit2, Trash2, Box, Layers } from 'lucide-react';
 import PneumaticActuators from './pneumatic_actuators';
 import ElectricActuator from './electric_actuator';
 import Accessories from './accessories';

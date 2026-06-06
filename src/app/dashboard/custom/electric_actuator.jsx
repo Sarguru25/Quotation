@@ -167,19 +167,17 @@ export default function ElectricActuator({ onSave, editProduct, onCancel }) {
   const matchedProduct = useMemo(() => {
     let products = [...operationData];
 
-    if (torque) {
-      products = products.filter((item) => Number(item.torque_nm) === Number(torque));
-    }
+    products.sort((a, b) => Number(a.torque_nm) - Number(b.torque_nm));
 
-    if (voltage) {
-      products = products.filter((item) => {
-        if (!item.voltage) return true;
-        return item.voltage.some((v) => v.toLowerCase().includes(voltage.toLowerCase()));
-      });
+    if (torque) {
+      const targetTorque = Number(torque);
+      const matched = products.find((item) => Number(item.torque_nm) >= targetTorque);
+      if (matched) return matched;
+      return products.length > 0 ? products[products.length - 1] : null;
     }
 
     return products.length > 0 ? products[0] : null;
-  }, [operationData, torque, voltage]);
+  }, [operationData, torque]);
 
   // ========== RECALCULATE FUNCTION ==========
   const recalculateOutputs = useCallback(() => {
@@ -331,13 +329,14 @@ export default function ElectricActuator({ onSave, editProduct, onCancel }) {
               
               <div>
                 <label className={labelClass}>Torque (Nm)</label>
-                <div className="relative">
-                  <select value={torque} onChange={(e) => setTorque(e.target.value)} className={selectClass}>
-                    <option value="">Select Torque</option>
-                    {torqueOptions.map(opt => <option key={opt} value={opt}>{opt} Nm</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-gray-400 pointer-events-none" />
-                </div>
+                <input 
+                  type="number" 
+                  min="0" 
+                  value={torque} 
+                  onChange={(e) => setTorque(e.target.value)} 
+                  className={inputClass} 
+                  placeholder="Enter Torque" 
+                />
               </div>
               
               <div>
@@ -366,7 +365,6 @@ export default function ElectricActuator({ onSave, editProduct, onCancel }) {
                 <label className={labelClass}>Voltage</label>
                 <div className="relative">
                   <select value={voltage} onChange={(e) => setVoltage(e.target.value)} className={selectClass}>
-                    <option value="">Select Voltage</option>
                     {voltageOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                   </select>
                   <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-gray-400 pointer-events-none" />

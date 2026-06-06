@@ -104,7 +104,7 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
   const [valveType, setValveType] = useState("Ball Valve");
   const [size, setSize] = useState("");
   const [tagNo, setTagNo] = useState("");
-  const [isoMounting, setIsoMounting] = useState("F03");
+  const [isoMounting, setIsoMounting] = useState("None");
   const [shaftProfile, setShaftProfile] = useState("Double Square");
   const [inputTorqueWOFOS, setInputTorqueWOFOS] = useState("");
   const [factorOfSafety, setFactorOfSafety] = useState("30%");
@@ -113,6 +113,11 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
   const [actuatorSeries, setActuatorSeries] = useState("ZRC");
   const [quantity, setQuantity] = useState(1);
   const [discount, setDiscount] = useState(0);
+  const [afrDiscount, setAfrDiscount] = useState(0);
+  const [lsDiscount, setLsDiscount] = useState(0);
+  const [sovDiscount, setSovDiscount] = useState(0);
+  const [qevDiscount, setQevDiscount] = useState(0);
+  const [scDiscount, setScDiscount] = useState(0);
 
   // Accessories selections
   const [accessoriesAFR, setAccessoriesAFR] = useState("");
@@ -298,10 +303,32 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
     return found?.price_inr || 0;
   }, [accessoriesSC, dbAccessories]);
 
+  const afrDiscountAmount = (afrPrice * (parseFloat(afrDiscount) || 0)) / 100;
+  const discountedAfrPrice = afrPrice - afrDiscountAmount;
+
+  const lsDiscountAmount = (lsPrice * (parseFloat(lsDiscount) || 0)) / 100;
+  const discountedLsPrice = lsPrice - lsDiscountAmount;
+
+  const sovDiscountAmount = (sovPrice * (parseFloat(sovDiscount) || 0)) / 100;
+  const discountedSovPrice = sovPrice - sovDiscountAmount;
+
+  const qevDiscountAmount = (qevPrice * (parseFloat(qevDiscount) || 0)) / 100;
+  const discountedQevPrice = qevPrice - qevDiscountAmount;
+
+  const scDiscountAmount = (scPrice * (parseFloat(scDiscount) || 0)) / 100;
+  const discountedScPrice = scPrice - scDiscountAmount;
+
   const totalAccessoriesPrice = afrPrice + lsPrice + sovPrice + qevPrice + scPrice;
-  const unitPriceTotal = outputActuatorUnitPrice + outputAdaptorPrice + totalAccessoriesPrice;
-  const discountAmount = (unitPriceTotal * (parseFloat(discount) || 0)) / 100;
-  const discountedUnitPrice = unitPriceTotal - discountAmount;
+  const accessoriesDiscountAmount = afrDiscountAmount + lsDiscountAmount + sovDiscountAmount + qevDiscountAmount + scDiscountAmount;
+  const discountedAccessoriesPrice = discountedAfrPrice + discountedLsPrice + discountedSovPrice + discountedQevPrice + discountedScPrice;
+
+  const actuatorTotal = outputActuatorUnitPrice + outputAdaptorPrice;
+  const actuatorDiscountAmount = (actuatorTotal * (parseFloat(discount) || 0)) / 100;
+  const discountedActuatorPrice = actuatorTotal - actuatorDiscountAmount;
+
+  const unitPriceTotal = actuatorTotal + totalAccessoriesPrice;
+  const totalDiscountAmount = actuatorDiscountAmount + accessoriesDiscountAmount;
+  const discountedUnitPrice = discountedActuatorPrice + discountedAccessoriesPrice;
   const amountInINR = quantity * discountedUnitPrice;
 
   // Populate from editProduct
@@ -310,7 +337,7 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
       setValveType(editProduct.valveType || "Ball Valve");
       setSize(editProduct.size || "");
       setTagNo(editProduct.tagNo || "");
-      setIsoMounting(editProduct.isoMounting || "F03");
+      setIsoMounting(editProduct.isoMounting || "None");
       setShaftProfile(editProduct.shaftProfile || "Double Square");
       setInputTorqueWOFOS(editProduct.inputTorqueWOFOS || "");
       setFactorOfSafety(editProduct.factorOfSafety || "30%");
@@ -319,6 +346,11 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
       setActuatorSeries(editProduct.actuatorSeries || "ZRC");
       setQuantity(editProduct.quantity || 1);
       setDiscount(editProduct.discount || 0);
+      setAfrDiscount(editProduct.afrDiscount || 0);
+      setLsDiscount(editProduct.lsDiscount || 0);
+      setSovDiscount(editProduct.sovDiscount || 0);
+      setQevDiscount(editProduct.qevDiscount || 0);
+      setScDiscount(editProduct.scDiscount || 0);
       setAccessoriesAFR(editProduct.accessoriesAFR || "");
       setAccessoriesLS(editProduct.accessoriesLS || "");
       setAccessoriesSOV(editProduct.accessoriesSOV || "");
@@ -347,7 +379,12 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
       actuatorSeries,
       quantity,
       discount: parseFloat(discount) || 0,
-      discountAmount,
+      afrDiscount: parseFloat(afrDiscount) || 0,
+      lsDiscount: parseFloat(lsDiscount) || 0,
+      sovDiscount: parseFloat(sovDiscount) || 0,
+      qevDiscount: parseFloat(qevDiscount) || 0,
+      scDiscount: parseFloat(scDiscount) || 0,
+      discountAmount: totalDiscountAmount,
       discountedUnitPrice,
       accessoriesAFR,
       accessoriesLS,
@@ -362,6 +399,8 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
       actuatorUnitPrice: outputActuatorUnitPrice,
       adaptorPrice: outputAdaptorPrice,
       totalAccessoriesPrice,
+      accessoriesDiscountAmount,
+      discountedAccessoriesPrice,
       unitPriceTotal,
       amountInINR,
     };
@@ -374,12 +413,17 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
       setSize("");
       setInputTorqueWOFOS("");
       setDiscount(0);
+      setAfrDiscount(0);
+      setLsDiscount(0);
+      setSovDiscount(0);
+      setQevDiscount(0);
+      setScDiscount(0);
     }
   };
 
   // ========== DROPDOWN OPTIONS ==========
   const valveOptions = ["Ball Valve", "Butterfly Valve", "Plug Valve"];
-  const isoMountingOptions = ["F03", "F04", "F05", "F07", "F10", "F12", "F14", "F16"];
+  const isoMountingOptions = ["none", "F03",  "F04", "F05", "F07", "F10", "F12", "F14", "F16"];
   const shaftProfileOptions = ["Double Square", "Double D", "Key Way"];
   const safetyOptions = ["20%", "25%", "30%", "40%", "50%", "100%"];
   const airPressureOptions = ["2", "2.5", "3", "4", "4.5", "5", "5.5", "6"];
@@ -517,7 +561,7 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
               </div>
 
               <div>
-                <label className={labelClass}>Discount (%)</label>
+                <label className={labelClass}>Actuator Discount (%)</label>
                 <input type="number" min="0" step="any" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)} className={inputClass} placeholder="0" />
               </div>
             </div>
@@ -541,7 +585,13 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
                     </select>
                     <ChevronDown className="absolute right-2.5 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" />
                   </div>
-                  <div className="text-right text-indigo-600 font-semibold text-sm">₹ {afrPrice.toFixed(2)}</div>
+                  <div className="flex justify-between items-center mt-2">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-gray-500 font-medium">Disc%</span>
+                      <input type="number" min="0" step="any" value={afrDiscount} onChange={(e) => setAfrDiscount(parseFloat(e.target.value) || 0)} className="w-14 bg-gray-50 border border-gray-200 text-gray-700 py-1 px-1.5 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 text-center" placeholder="0" />
+                    </div>
+                    <div className="text-right text-indigo-600 font-semibold text-sm">₹ {discountedAfrPrice.toFixed(2)}</div>
+                  </div>
                 </div>
 
                 {/* LS */}
@@ -555,7 +605,13 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
                     </select>
                     <ChevronDown className="absolute right-2.5 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" />
                   </div>
-                  <div className="text-right text-indigo-600 font-semibold text-sm">₹ {lsPrice.toFixed(2)}</div>
+                  <div className="flex justify-between items-center mt-2">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-gray-500 font-medium">Disc%</span>
+                      <input type="number" min="0" step="any" value={lsDiscount} onChange={(e) => setLsDiscount(parseFloat(e.target.value) || 0)} className="w-14 bg-gray-50 border border-gray-200 text-gray-700 py-1 px-1.5 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 text-center" placeholder="0" />
+                    </div>
+                    <div className="text-right text-indigo-600 font-semibold text-sm">₹ {discountedLsPrice.toFixed(2)}</div>
+                  </div>
                 </div>
 
                 {/* SOV */}
@@ -569,7 +625,13 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
                     </select>
                     <ChevronDown className="absolute right-2.5 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" />
                   </div>
-                  <div className="text-right text-indigo-600 font-semibold text-sm">₹ {sovPrice.toFixed(2)}</div>
+                  <div className="flex justify-between items-center mt-2">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-gray-500 font-medium">Disc%</span>
+                      <input type="number" min="0" step="any" value={sovDiscount} onChange={(e) => setSovDiscount(parseFloat(e.target.value) || 0)} className="w-14 bg-gray-50 border border-gray-200 text-gray-700 py-1 px-1.5 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 text-center" placeholder="0" />
+                    </div>
+                    <div className="text-right text-indigo-600 font-semibold text-sm">₹ {discountedSovPrice.toFixed(2)}</div>
+                  </div>
                 </div>
 
                 {/* QEV */}
@@ -583,7 +645,13 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
                     </select>
                     <ChevronDown className="absolute right-2.5 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" />
                   </div>
-                  <div className="text-right text-indigo-600 font-semibold text-sm">₹ {qevPrice.toFixed(2)}</div>
+                  <div className="flex justify-between items-center mt-2">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-gray-500 font-medium">Disc%</span>
+                      <input type="number" min="0" step="any" value={qevDiscount} onChange={(e) => setQevDiscount(parseFloat(e.target.value) || 0)} className="w-14 bg-gray-50 border border-gray-200 text-gray-700 py-1 px-1.5 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 text-center" placeholder="0" />
+                    </div>
+                    <div className="text-right text-indigo-600 font-semibold text-sm">₹ {discountedQevPrice.toFixed(2)}</div>
+                  </div>
                 </div>
 
                 {/* SC */}
@@ -597,14 +665,34 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
                     </select>
                     <ChevronDown className="absolute right-2.5 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" />
                   </div>
-                  <div className="text-right text-indigo-600 font-semibold text-sm">₹ {scPrice.toFixed(2)}</div>
+                  <div className="flex justify-between items-center mt-2">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-gray-500 font-medium">Disc%</span>
+                      <input type="number" min="0" step="any" value={scDiscount} onChange={(e) => setScDiscount(parseFloat(e.target.value) || 0)} className="w-14 bg-gray-50 border border-gray-200 text-gray-700 py-1 px-1.5 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 text-center" placeholder="0" />
+                    </div>
+                    <div className="text-right text-indigo-600 font-semibold text-sm">₹ {discountedScPrice.toFixed(2)}</div>
+                  </div>
                 </div>
               </div>
 
               {/* Total */}
-              <div className="mt-5 flex justify-between items-center bg-white border border-gray-100 rounded-xl p-3 shadow-sm">
-                <span className="font-semibold text-gray-700">Accessories Total</span>
-                <span className="font-bold text-indigo-600">₹ {totalAccessoriesPrice.toFixed(2)}</span>
+              <div className="mt-5 space-y-2">
+                <div className="flex justify-between items-center bg-white border border-gray-100 rounded-xl p-3 shadow-sm">
+                  <span className="font-semibold text-gray-700">Accessories Subtotal</span>
+                  <span className="font-bold text-indigo-600">₹ {totalAccessoriesPrice.toFixed(2)}</span>
+                </div>
+                {accessoriesDiscountAmount > 0 && (
+                  <>
+                    <div className="flex justify-between items-center bg-white border border-gray-100 rounded-xl p-3 shadow-sm">
+                      <span className="font-medium text-gray-600">Total Accessories Discount</span>
+                      <span className="font-semibold text-red-500">- ₹ {accessoriesDiscountAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center bg-indigo-50 border border-indigo-100 rounded-xl p-3 shadow-sm">
+                      <span className="font-bold text-indigo-800">Discounted Accessories Total</span>
+                      <span className="font-bold text-indigo-600">₹ {discountedAccessoriesPrice.toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -689,15 +777,15 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
             <div className="mt-6 pt-5 border-t border-gray-100 space-y-3">
               <div className="flex justify-between items-center px-2">
                 <span className="font-medium text-gray-600">Accessories Total:</span>
-                <span className="font-semibold text-gray-800">₹ {totalAccessoriesPrice.toFixed(2)}</span>
+                <span className="font-semibold text-gray-800">₹ {discountedAccessoriesPrice.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center px-2">
-                <span className="font-medium text-gray-600">Unit Price Total:</span>
-                <span className="font-semibold text-gray-800">₹ {unitPriceTotal.toFixed(2)}</span>
+                <span className="font-medium text-gray-600">Actuator Total:</span>
+                <span className="font-semibold text-gray-800">₹ {discountedActuatorPrice.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center px-2">
-                <span className="font-medium text-gray-600">Discount ({parseFloat(discount) || 0}%):</span>
-                <span className="font-semibold text-red-500">- ₹ {discountAmount.toFixed(2)}</span>
+                <span className="font-medium text-gray-600">Total Discount:</span>
+                <span className="font-semibold text-red-500">- ₹ {totalDiscountAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center px-2">
                 <span className="font-medium text-gray-600">Discounted Unit Price:</span>

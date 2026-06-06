@@ -221,7 +221,7 @@ export default function QuotationsPage() {
   // Helper to get tax percentage from tax_id
   function getTaxPercentage(taxId) {
     if (!taxId) return 0;
-    const tax = taxes.find(t => t.tax_id === taxId);
+    const tax = taxes.find(t => (t.zoho_tax_id || t.tax_id || t._id) === taxId);
     return tax ? tax.tax_percentage : 0;
   }
 
@@ -779,9 +779,12 @@ export default function QuotationsPage() {
                             className="w-full bg-transparent border border-gray-200 rounded px-2 py-1 outline-none text-sm text-gray-700 focus:border-blue-500"
                           >
                             <option value="">No Tax</option>
-                            {taxes.map(t => (
-                              <option key={t.tax_id} value={t.tax_id}>{t.tax_name} ({t.tax_percentage}%)</option>
-                            ))}
+                            {taxes.map(t => {
+                              const tid = t.zoho_tax_id || t.tax_id || t._id;
+                              return (
+                                <option key={tid} value={tid}>{t.tax_name} ({t.tax_percentage}%)</option>
+                              );
+                            })}
                           </select>
                           {lineTax > 0 && <div className="text-xs text-green-600 mt-1 text-right">+{formatCurrency(lineTax)}</div>}
                         </td>

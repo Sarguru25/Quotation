@@ -20,7 +20,7 @@ export async function getTaxes(options = {}) {
   }
   
   if (status && status !== 'all') {
-    query.status = status;
+    query.status = { $regex: new RegExp(`^${status}$`, 'i') };
   }
   
   const skip = (page - 1) * limit;
