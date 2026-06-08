@@ -101,12 +101,10 @@ export default function ActivityTimeline({ quote, localQuote, activityLogs }) {
       <div className="relative border-l-2 border-gray-100 ml-3 space-y-8">
         {activities.map((activity, index) => (
           <div key={activity.id} className="relative pl-8">
-            {/* Timeline dot */}
             <div className={`absolute -left-[17px] top-1 h-8 w-8 rounded-full ${activity.color} flex items-center justify-center shadow-sm border-4 border-white`}>
               {getIcon(activity.icon)}
             </div>
             
-            {/* Content */}
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
               <div className="flex justify-between items-start mb-1">
                 <h4 className="text-sm font-bold text-gray-800">{activity.title}</h4>

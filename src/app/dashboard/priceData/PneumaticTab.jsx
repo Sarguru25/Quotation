@@ -266,7 +266,6 @@ export default function PneumaticTab({ canManage }) {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-xl w-max mb-6">
         <button
           onClick={() => setActiveTab("DA")}
@@ -287,7 +286,6 @@ export default function PneumaticTab({ canManage }) {
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-        {/* Search */}
         <div className="relative w-full md:w-96">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="h-4 w-4 text-gray-400" />
@@ -301,7 +299,6 @@ export default function PneumaticTab({ canManage }) {
           />
         </div>
 
-        {/* Filters */}
         <div className="flex items-center space-x-3 w-full md:w-auto">
           <div className="flex items-center space-x-2">
             <Filter className="w-4 h-4 text-gray-500" />
@@ -421,7 +418,6 @@ export default function PneumaticTab({ canManage }) {
         </div>
       </div>
 
-      {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-y-auto max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">

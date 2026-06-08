@@ -15,7 +15,6 @@ export default function UsersPage() {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
 
@@ -171,7 +170,6 @@ export default function UsersPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-5 md:px-6 py-4 sm:py-6 space-y-6">
-      {/* HEADER */}
       <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
@@ -192,9 +190,7 @@ export default function UsersPage() {
         </button>
       </div>
 
-      {/* TABLE CARD */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-        {/* TOOLBAR */}
         <div className="p-3 sm:p-4 border-b border-gray-100 flex flex-col lg:flex-row gap-3 lg:gap-4 lg:items-center bg-gray-50/50">
           <div className="relative flex-1 w-full">
             <Search
@@ -215,7 +211,6 @@ export default function UsersPage() {
           </button>
         </div>
 
-        {/* TABLE */}
         <div className="overflow-x-auto min-h-[50vh]">
           <table className="min-w-[850px] w-full text-left border-collapse">
             <thead>
@@ -248,7 +243,6 @@ export default function UsersPage() {
                   key={user._id}
                   className="hover:bg-gray-50/50 transition-colors"
                 >
-                  {/* USER */}
                   <td className="px-3 sm:px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm shrink-0">
@@ -267,7 +261,6 @@ export default function UsersPage() {
                     </div>
                   </td>
 
-                  {/* ROLE */}
                   <td className="px-3 sm:px-6 py-4">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 border border-slate-200 whitespace-nowrap">
                       {user.role?.name ||
@@ -276,12 +269,10 @@ export default function UsersPage() {
                     </span>
                   </td>
 
-                  {/* DEPARTMENT */}
                   <td className="px-3 sm:px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
                     {user.department}
                   </td>
 
-                  {/* STATUS */}
                   <td className="px-3 sm:px-6 py-4">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
@@ -296,7 +287,6 @@ export default function UsersPage() {
                     </span>
                   </td>
 
-                  {/* ACTIONS */}
                   <td className="px-3 sm:px-6 py-4 text-right">
                     <div className="flex justify-end gap-2 sm:gap-3">
                       <button
@@ -336,11 +326,9 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200 my-auto">
-            {/* MODAL HEADER */}
             <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
               <h2 className="text-base sm:text-lg font-semibold text-gray-800">
                 {editingUser
@@ -370,12 +358,10 @@ export default function UsersPage() {
               </button>
             </div>
 
-            {/* FORM */}
             <form
               onSubmit={handleSubmit}
               className="p-4 sm:p-6 space-y-4"
             >
-              {/* NAME */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Full Name
@@ -395,7 +381,6 @@ export default function UsersPage() {
                 />
               </div>
 
-              {/* EMAIL */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Email
@@ -415,7 +400,6 @@ export default function UsersPage() {
                 />
               </div>
 
-              {/* PASSWORD */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Password{" "}
@@ -440,9 +424,7 @@ export default function UsersPage() {
                 />
               </div>
 
-              {/* ROLE + DEPARTMENT */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* ROLE */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Role
@@ -474,7 +456,6 @@ export default function UsersPage() {
                   </select>
                 </div>
 
-                {/* DEPARTMENT */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Department
@@ -494,7 +475,6 @@ export default function UsersPage() {
                 </div>
               </div>
 
-              {/* ACTIVE */}
               <div className="pt-2 flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -517,7 +497,6 @@ export default function UsersPage() {
                 </label>
               </div>
 
-              {/* FOOTER */}
               <div className="mt-6 flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-gray-100">
                 <button
                   type="button"

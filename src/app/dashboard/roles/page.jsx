@@ -19,7 +19,6 @@ export default function RolesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Create Role
   const [isCreating, setIsCreating] = useState(false);
   const [newRoleName, setNewRoleName] = useState("");
   const [newRoleDesc, setNewRoleDesc] = useState("");
@@ -197,7 +196,6 @@ export default function RolesPage() {
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
-      {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
@@ -218,7 +216,6 @@ export default function RolesPage() {
         </button>
       </div>
 
-      {/* Create Role */}
       {isCreating && (
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -274,9 +271,7 @@ export default function RolesPage() {
         </div>
       )}
 
-      {/* Main Layout */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Roles List */}
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col h-auto xl:h-[75vh]">
           <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
             <h3 className="font-semibold text-gray-700">
@@ -328,11 +323,9 @@ export default function RolesPage() {
           </ul>
         </div>
 
-        {/* Permissions */}
         <div className="xl:col-span-2 bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col h-auto xl:h-[75vh]">
           {selectedRole ? (
             <>
-              {/* Header */}
               <div className="p-4 sm:p-6 border-b border-gray-100 flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
                 <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2 break-words">
                   <ShieldAlert
@@ -351,7 +344,6 @@ export default function RolesPage() {
                 </button>
               </div>
 
-              {/* Permission Modules */}
               <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6">
                 {Object.entries(PERMISSIONS).map(
                   ([moduleName, modulePerms]) => {

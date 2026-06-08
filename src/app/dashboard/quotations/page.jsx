@@ -450,7 +450,6 @@ export default function QuotationsPage() {
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto">
-      {/* Toast */}
       {toast && (
         <div className={`fixed top-5 right-5 z-[100] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-medium transition-all duration-300
           ${toast.type === "error" ? "bg-red-600 text-white" : "bg-slate-900 text-white"}`}>
@@ -459,7 +458,6 @@ export default function QuotationsPage() {
         </div>
       )}
 
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Quotations</h1>
@@ -495,7 +493,6 @@ export default function QuotationsPage() {
         </div>
       </div>
 
-      {/* Search and Filter */}
       <div className="flex flex-col sm:flex-row gap-4 mb-5">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -521,7 +518,6 @@ export default function QuotationsPage() {
         </select>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
@@ -603,11 +599,9 @@ export default function QuotationsPage() {
         </div>
       </div>
 
-      {/* ========== FULL PAGE OVERLAY (ZOHO STYLE) ========== */}
       {open && (
         <div className="fixed top-0 bottom-0 right-0 left-0 md:left-64 bg-gray-50 flex justify-center items-start overflow-auto z-[50]">
           <div className="bg-white w-full min-h-full relative">
-            {/* Header */}
             <div className="flex justify-between items-center px-4 md:px-8 py-4 border-b border-gray-200 sticky top-0 bg-white z-10 shadow-sm">
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-gray-600" />
@@ -624,9 +618,7 @@ export default function QuotationsPage() {
             </div>
 
             <div className="max-w-[1200px] mx-auto py-8 px-6 pb-40">
-              {/* Form Grid */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-y-6 gap-x-8 mb-12">
-                {/* Customer */}
                 <div className="md:col-span-3 flex items-center md:justify-end">
                   <label className="text-sm font-medium text-red-500">Customer Name*</label>
                 </div>
@@ -657,7 +649,6 @@ export default function QuotationsPage() {
                 </div>
                 <div className="md:col-span-3"></div>
 
-                {/* Estimate# */}
                 <div className="md:col-span-3 flex items-center md:justify-end">
                   <label className="text-sm font-medium text-red-500">Estimate#*</label>
                 </div>
@@ -667,12 +658,10 @@ export default function QuotationsPage() {
                 </div>
                 <div className="md:col-span-3"></div>
 
-                {/* Reference# */}
                 <div className="md:col-span-3 flex items-center md:justify-end"><label className="text-sm font-medium text-gray-700">Reference#</label></div>
                 <div className="md:col-span-6"><input type="text" name="reference_number" value={form.reference_number} onChange={handleChange} className="w-full border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500" /></div>
                 <div className="md:col-span-3"></div>
 
-                {/* Quotation Creator */}
                 <div className="md:col-span-3 flex items-center md:justify-end"><label className="text-sm font-medium text-gray-700">Creator</label></div>
                 <div className="md:col-span-6">
                   <select name="cf_quotation_creater" value={form.cf_quotation_creater || ""} onChange={handleChange} className="w-full border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500 bg-white">
@@ -684,7 +673,6 @@ export default function QuotationsPage() {
                 </div>
                 <div className="md:col-span-3"></div>
 
-                {/* Estimate Date & Expiry */}
                 <div className="md:col-span-3 flex items-center md:justify-end"><label className="text-sm font-medium text-red-500">Estimate Date*</label></div>
                 <div className="md:col-span-6 flex gap-6 items-center">
                    <input type="date" name="date" value={form.date} onChange={handleChange} className="flex-1 border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500" />
@@ -693,16 +681,13 @@ export default function QuotationsPage() {
                 </div>
                 <div className="md:col-span-3"></div>
 
-                {/* Divider */}
                 <div className="md:col-span-12 border-t border-gray-100 my-4"></div>
 
-                {/* Additional fields from screenshot: Salesperson, Project Name, Offer Status, etc. */}
                 <div className="md:col-span-3 flex items-center md:justify-end"><label className="text-sm font-medium text-gray-700">Subject</label></div>
                 <div className="md:col-span-6"><input type="text" name="subject" value={form.subject} onChange={handleChange} placeholder="Let your customer know what this Estimate is for" className="w-full border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500" /></div>
                 <div className="md:col-span-3"></div>
               </div>
 
-              {/* Item Table section */}
               <div className="mb-6 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
                 <table className="w-full text-left">
                   <thead className="bg-gray-50 border-b border-gray-200 text-xs text-gray-500 uppercase tracking-wider">
@@ -723,7 +708,6 @@ export default function QuotationsPage() {
                       return (
                       <tr key={index} className="hover:bg-gray-50 transition-colors group">
                         <td className="px-5 py-3 align-top">
-                          {/* Item dropdown */}
                           <SearchableSelect
                             options={items.map(zohoItem => ({
                               value: zohoItem.zoho_item_id || zohoItem.item_id || zohoItem._id,
@@ -749,7 +733,6 @@ export default function QuotationsPage() {
                             placeholder="Select an item from Zoho"
                             className="w-full bg-white border border-gray-200 rounded px-2 py-1.5 text-sm outline-none text-gray-800 font-medium focus:border-blue-500 mb-2"
                           />
-                          {/* Manual item name */}
                           <input
                             type="text"
                             value={item.name}
@@ -757,7 +740,6 @@ export default function QuotationsPage() {
                             placeholder="Or type item name manually..."
                             className="w-full text-sm text-gray-800 bg-transparent border border-gray-200 rounded px-2 py-1.5 outline-none focus:border-blue-500 mb-1"
                           />
-                          {/* Description */}
                           <textarea
                             value={item.description || ""}
                             onChange={e => handleItemChange(index, "description", e.target.value)}
@@ -807,7 +789,6 @@ export default function QuotationsPage() {
                 </div>
               </div>
 
-              {/* Totals Section */}
               <div className="flex flex-col md:flex-row justify-between mt-8">
                 <div className="w-full md:w-1/2 pr-8 space-y-6">
                   <div>
@@ -857,7 +838,6 @@ export default function QuotationsPage() {
 
             </div>
 
-            {/* Sticky Bottom Bar */}
             <div className="fixed bottom-0 left-0 md:left-64 right-0 bg-white border-t border-gray-200 px-4 md:px-8 py-4 flex justify-between items-center z-[60] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                <div className="flex gap-3">
                   <button className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm font-medium transition-colors shadow-sm">

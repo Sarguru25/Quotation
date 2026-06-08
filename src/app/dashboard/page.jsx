@@ -1,11 +1,9 @@
-// app/dashboard/page.jsx
-
 "use client";
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { RefreshCcw } from "lucide-react";
+import { RefreshCcw, Plus } from "lucide-react";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
@@ -87,7 +85,6 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">
           Welcome back, {session?.user?.name}
@@ -98,7 +95,6 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { label: "Recent Quotations", value: stats.totalQuotes, color: "border-gray-200 bg-white", text: "text-gray-900" },
@@ -113,19 +109,18 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
-        {/* Recent Quotations */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col">
           <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-2xl">
             <h2 className="text-lg font-semibold text-gray-900">Recent Quotations</h2>
-            <button
-              onClick={fetchDashboardData}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded-lg border border-transparent hover:border-gray-200 transition-all shadow-sm"
+            <Link
+              href="/dashboard/quotations?new=true"
+              className="btn-press flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm shadow-indigo-200 transition-colors"
             >
-              <RefreshCcw size={16} />
-            </button>
+              <Plus size={16} />
+              New Quotation
+            </Link>      
           </div>
 
           <div className="flex-1 overflow-x-auto">
@@ -177,15 +172,15 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Recent Visits */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col">
           <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-2xl">
             <h2 className="text-lg font-semibold text-gray-900">Recent Visits</h2>
             <Link
               href="/dashboard/visits/new"
-              className="text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+              className="btn-press flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm shadow-indigo-200 transition-colors"
             >
-              + Log Visit
+              <Plus size={16} />
+              Log Visit
             </Link>
           </div>
 

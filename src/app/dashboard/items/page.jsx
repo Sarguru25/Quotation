@@ -223,7 +223,6 @@ export default function ItemsPage() {
     );
   });
 
-  // Format currency
   const formatCurrency = (amount) => {
     const num = parseFloat(amount);
     if (isNaN(num)) return "0.00";
@@ -235,7 +234,6 @@ export default function ItemsPage() {
 
   return (
     <div className="bg-white min-h-screen">
-      {/* Toast */}
       {toast && (
         <Toast
           message={toast.message}
@@ -244,7 +242,6 @@ export default function ItemsPage() {
         />
       )}
 
-      {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-600 rounded-lg">
@@ -274,7 +271,6 @@ export default function ItemsPage() {
         </div>
       </div>
 
-      {/* Search */}
       <div className="px-6 py-3 border-b border-gray-100">
         <div className="relative max-w-sm">
           <Search
@@ -291,7 +287,6 @@ export default function ItemsPage() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -412,11 +407,9 @@ export default function ItemsPage() {
         </table>
       </div>
 
-      {/* ========== CREATE / EDIT MODAL (Zoho-style) ========== */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-start overflow-auto z-[100] pt-8 pb-8">
           <div className="bg-white w-full max-w-2xl rounded-xl shadow-2xl relative animate-fade-in mx-4">
-            {/* Modal Header */}
             <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-800">
                 {editingItemId ? "Edit Item" : "New Item"}
@@ -433,11 +426,8 @@ export default function ItemsPage() {
               </button>
             </div>
 
-            {/* Modal Body */}
             <div className="px-6 py-5 space-y-6 max-h-[70vh] overflow-y-auto">
-              {/* Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {/* Name */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-red-500 mb-1.5">
                     Name*
@@ -452,7 +442,6 @@ export default function ItemsPage() {
                   />
                 </div>
 
-                {/* Type */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Type
@@ -483,7 +472,6 @@ export default function ItemsPage() {
                   </div>
                 </div>
 
-                {/* Unit */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Unit
@@ -508,7 +496,6 @@ export default function ItemsPage() {
                   </div>
                 </div>
 
-                {/* SKU */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     SKU
@@ -524,7 +511,6 @@ export default function ItemsPage() {
                 </div>
               </div>
 
-              {/* Sales Information */}
               <div className="border border-gray-200 rounded-xl overflow-hidden">
                 <div className="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center gap-2">
                   <div className="w-4 h-4 bg-blue-600 rounded flex items-center justify-center">
@@ -571,7 +557,6 @@ export default function ItemsPage() {
                 </div>
               </div>
 
-              {/* Purchase Information */}
               <div className="border border-gray-200 rounded-xl overflow-hidden">
                 <div className="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center gap-2">
                   <div className="w-4 h-4 bg-blue-600 rounded flex items-center justify-center">
@@ -619,7 +604,6 @@ export default function ItemsPage() {
               </div>
             </div>
 
-            {/* Modal Footer */}
             <div className="px-6 py-4 border-t border-gray-200 flex items-center gap-3 bg-gray-50 rounded-b-xl">
               <button
                 onClick={handleSaveItem}
@@ -650,7 +634,6 @@ export default function ItemsPage() {
         </div>
       )}
 
-      {/* ========== DELETE CONFIRMATION ========== */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-[100]">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 animate-fade-in">

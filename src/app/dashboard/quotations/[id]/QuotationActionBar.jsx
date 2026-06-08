@@ -73,7 +73,6 @@ export default function QuotationActionBar({ quote }) {
     <div className="sticky top-0 z-10 w-full mb-6 print:hidden">
       <div className="bg-white/80 backdrop-blur-md border border-gray-200 shadow-sm rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
         
-        {/* Status Badge */}
         <div className="flex items-center gap-3">
           <span className="text-sm font-semibold text-gray-500">Status:</span>
           <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider
@@ -88,7 +87,6 @@ export default function QuotationActionBar({ quote }) {
           </span>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
           
           <button

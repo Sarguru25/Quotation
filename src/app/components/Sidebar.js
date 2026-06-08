@@ -36,7 +36,8 @@ export default function Sidebar({ onClose }) {
     { name: "Items", href: "/dashboard/items", icon: ListPlus, requiresAny: [PERMISSIONS.PRODUCT.VIEW] },
     { name: "Users", href: "/dashboard/users", icon: UserCircle, requiresAny: [PERMISSIONS.USER.VIEW] },
     { name: "Roles", href: "/dashboard/roles", icon: ShieldAlert, requiresAny: [PERMISSIONS.ROLE.MANAGE] },
-    { name: "Data Sync", href: "/dashboard/sync", icon: Database, requiresAny: [PERMISSIONS.ROLE.MANAGE] },
+    // { name: "Data Sync", href: "/dashboard/sync", icon: Database, requiresAny: [PERMISSIONS.ROLE.MANAGE] },
+    { name: "Data Sync", href: "/dashboard/sync", icon: Database },
     { name: "Price Data", href: "/dashboard/priceData", icon: ReceiptIndianRupee, requiresAny: [PERMISSIONS.PRICE_DATA.VIEW] },
     { name: "Visits", href: "/dashboard/visits", icon: HatGlasses, requiresAny: [PERMISSIONS.VISIT.VIEW] },
   ];

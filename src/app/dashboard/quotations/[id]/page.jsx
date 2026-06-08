@@ -114,7 +114,6 @@ export default async function QuoteDetailsPage({ params }) {
 
       <div className="bg-white w-full max-w-4xl shadow-xl border relative overflow-hidden print:shadow-none print:border-none print:p-0 mb-6">
 
-        {/* Ribbon for Status */}
         {quote.status && (
           <div className="absolute top-0 left-0 w-32 h-32 overflow-hidden pointer-events-none">
             <div className={`absolute -left-12 top-10 w-50 text-center text-white font-bold py-1 shadow-md transform -rotate-45 uppercase tracking-wider text-sm
@@ -125,7 +124,6 @@ export default async function QuoteDetailsPage({ params }) {
           </div>
         )}
 
-        {/* Top Header Section */}
         <div className="p-10 pb-0">
           <div className="flex justify-between items-start">
             <div className="ml-12 mt-4">
@@ -155,7 +153,6 @@ export default async function QuoteDetailsPage({ params }) {
           </div>
 
           <div className="mt-8 flex justify-between items-start gap-8">
-            {/* Customer Details */}
             <div className="flex-1 text-sm text-gray-700 leading-relaxed">
               <p className="mb-1 text-gray-800">Customer:</p>
               <p className="font-bold text-blue-600 uppercase text-base">{quote.customer_name}</p>
@@ -171,7 +168,6 @@ export default async function QuoteDetailsPage({ params }) {
               {quote.gst_no && <p className="mt-1">GSTIN {quote.gst_no}</p>}
             </div>
 
-            {/* Quotation Info Table */}
             <div className="w-72 flex-shrink-0">
               <table className="w-full text-sm border-collapse border border-gray-200">
                 <tbody>
@@ -212,7 +208,6 @@ export default async function QuoteDetailsPage({ params }) {
           )}
         </div>
 
-        {/* Items Table */}
         <div className="mt-8 px-10">
           <table className="w-full text-sm border border-gray-200">
             <thead className="bg-gray-50 text-gray-600 text-center border-b border-gray-200">
@@ -255,7 +250,6 @@ export default async function QuoteDetailsPage({ params }) {
           </table>
         </div>
 
-        {/* Totals Section */}
         <div className="px-10 mt-6 flex justify-between items-start">
           <div className="text-sm text-gray-600">
             <p>We thank you for your enquiry and look forward for your confirmation of order.</p>
@@ -300,7 +294,6 @@ export default async function QuoteDetailsPage({ params }) {
           </div>
         </div>
 
-        {/* Footer & Terms */}
         <div className="px-10 py-8 text-sm text-gray-800">
           <p className="font-medium mb-3 text-base">Terms & Conditions:</p>
           {quote.terms ? (
