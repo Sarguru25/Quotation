@@ -31,14 +31,22 @@ const getSingleActingMatch = (
   // 1. Filter matching models
   const valid = (saData || []).filter((item) => {
     const pressureData = item?.air_pressure_bar?.[pressureKey];
+    const springData = item?.spring_output;
 
-    if (!pressureData) return false;
+    if (!pressureData || !springData) return false;
 
-    const start = Number(pressureData.start || 0);
-    const end = Number(pressureData.end || 0);
+    const airStart = Number(pressureData.start || 0);
+    const airEnd = Number(pressureData.end || 0);
+    const springStart = Number(springData.start || 0);
+    const springEnd = Number(springData.end || 0);
 
-    // BOTH must be greater than required torque
-    return start > requiredTorque && end > requiredTorque;
+    // BOTH air pressure and spring output must be greater than or equal to required torque
+    return (
+      airStart >= requiredTorque && 
+      airEnd >= requiredTorque && 
+      springStart >= requiredTorque && 
+      springEnd >= requiredTorque
+    );
   });
 
   // 3. No matches
@@ -67,6 +75,7 @@ const getSingleActingMatch = (
 
   return finalPool[0];
 };
+
 export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
 
   // ========== DATABASE DATA ==========
