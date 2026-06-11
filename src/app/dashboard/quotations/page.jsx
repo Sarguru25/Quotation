@@ -123,6 +123,7 @@ export default function QuotationsPage() {
   const initialFormState = {
     customer_id: "",
     customer_name: "",
+    estimate_number: "",
     reference_number: "",
     subject: "",
     date: new Date().toISOString().split("T")[0],
@@ -133,6 +134,14 @@ export default function QuotationsPage() {
     adjustment: 0,
     line_items: [{ item_id: "", name: "", description: "", quantity: 1, rate: 0, tax_id: "" }],
     cf_quotation_creater: "",
+    salesperson: "",
+    project_name: "",
+    offer_status: "Open",
+    estimated_margin: "",
+    epc_customer: "",
+    project: "",
+    end_user: "",
+    market_segment: "",
   };
 
   const [form, setForm] = useState(initialFormState);
@@ -414,6 +423,14 @@ export default function QuotationsPage() {
             tax_id: item.tax_id || "",
           })) || [{ item_id: "", name: "", description: "", quantity: 1, rate: 0, tax_id: "" }],
           cf_quotation_creater: fullQuote.custom_fields?.find(cf => cf.api_name === "cf_quotation_creater")?.value || "",
+          salesperson: fullQuote.salesperson_id || fullQuote.salesperson_name || fullQuote.custom_fields?.find(cf => cf.api_name === "salesperson")?.value || "",
+          project_name: fullQuote.project_id || fullQuote.custom_fields?.find(cf => cf.api_name === "project_name")?.value || "",
+          offer_status: fullQuote.custom_fields?.find(cf => cf.api_name === "offer_status")?.value || "Open",
+          estimated_margin: fullQuote.custom_fields?.find(cf => cf.api_name === "estimated_margin")?.value || "",
+          epc_customer: fullQuote.custom_fields?.find(cf => cf.api_name === "epc_customer")?.value || "",
+          project: fullQuote.custom_fields?.find(cf => cf.api_name === "project")?.value || "",
+          end_user: fullQuote.custom_fields?.find(cf => cf.api_name === "end_user")?.value || "",
+          market_segment: fullQuote.custom_fields?.find(cf => cf.api_name === "market_segment")?.value || "",
         });
       }
     } catch (error) { console.error(error); }
@@ -681,6 +698,75 @@ export default function QuotationsPage() {
                 </div>
                 <div className="md:col-span-3"></div>
 
+                <div className="md:col-span-12 border-t border-gray-100 my-4"></div>
+
+                <div className="md:col-span-3 flex items-center md:justify-end"><label className="text-sm font-medium text-red-500">Salesperson*</label></div>
+                <div className="md:col-span-6">
+                  <select name="salesperson" value={form.salesperson || ""} onChange={handleChange} className="w-full border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500 bg-white">
+                    <option value="">Select or Add Salesperson</option>
+                    {users.map(u => (
+                      <option key={u._id} value={u._id}>{u.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="md:col-span-3"></div>
+
+                <div className="md:col-span-3 flex items-center md:justify-end"><label className="text-sm font-medium text-gray-700">Project Name</label></div>
+                <div className="md:col-span-6">
+                  <select name="project_name" value={form.project_name || ""} onChange={handleChange} className="w-full border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500 bg-white">
+                    <option value="">Select a project</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">Select a customer to associate a project.</p>
+                </div>
+                <div className="md:col-span-3"></div>
+
+                <div className="md:col-span-3 flex items-center md:justify-end"><label className="text-sm font-medium text-red-500">Offer Status *</label></div>
+                <div className="md:col-span-3">
+                  <select name="offer_status" value={form.offer_status || "Open"} onChange={handleChange} className="w-full border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500 bg-white">
+                    <option value="Open">Open</option>
+                    <option value="Closed">Closed</option>
+                    <option value="In Progress">In Progress</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2 flex items-center md:justify-end"><label className="text-sm font-medium text-red-500">Estimated Margin *</label></div>
+                <div className="md:col-span-4">
+                  <input type="text" name="estimated_margin" value={form.estimated_margin || ""} onChange={handleChange} className="w-full border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500" />
+                </div>
+
+                <div className="md:col-span-3 flex items-center md:justify-end"><label className="text-sm font-medium text-gray-700">EPC/ Customer</label></div>
+                <div className="md:col-span-3">
+                  <input type="text" name="epc_customer" value={form.epc_customer || ""} onChange={handleChange} className="w-full border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500" />
+                </div>
+                <div className="md:col-span-2 flex items-center md:justify-end"><label className="text-sm font-medium text-gray-700">Project</label></div>
+                <div className="md:col-span-4">
+                  <input type="text" name="project" value={form.project || ""} onChange={handleChange} className="w-full border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500" />
+                </div>
+
+                <div className="md:col-span-3 flex items-center md:justify-end"><label className="text-sm font-medium text-gray-700">End User</label></div>
+                <div className="md:col-span-3">
+                  <input type="text" name="end_user" value={form.end_user || ""} onChange={handleChange} className="w-full border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500" />
+                </div>
+                <div className="md:col-span-2 flex items-center md:justify-end"><label className="text-sm font-medium text-red-500">Market Segment *</label></div>
+                <div className="md:col-span-4">
+                  <select name="market_segment" value={form.market_segment || ""} onChange={handleChange} className="w-full border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500 bg-white">
+                    <option value="">Select Market Segment</option>
+                    <option value="Oil & Gas">Oil & Gas</option>
+                    <option value="Marine & Offshore">Marine & Offshore</option>
+                    <option value="Water & Waste Water Treatment">Water & Waste Water Treatment</option>
+                    <option value="General Industry">General Industry</option>
+                    <option value="HVAC">HVAC</option>
+                    <option value="Chemical & Petrochemical">Chemical & Petrochemical</option>
+                    <option value="Pharmaceutical">Pharmaceutical</option>
+                    <option value="Mining and Cement / Steel">Mining and Cement / Steel</option>
+                    <option value="Energy">Energy</option>
+                    <option value="Fire Fighting">Fire Fighting</option>
+                    <option value="Food & Pharma">Food & Pharma</option>
+                    <option value="Paper / Pulp / Sugar">Paper / Pulp / Sugar</option>
+                    <option value="Building Solutions">Building Solutions</option>
+                    <option value="Textile">Textile</option>
+                  </select>
+                </div>
+                
                 <div className="md:col-span-12 border-t border-gray-100 my-4"></div>
 
                 <div className="md:col-span-3 flex items-center md:justify-end"><label className="text-sm font-medium text-gray-700">Subject</label></div>

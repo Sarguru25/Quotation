@@ -12,9 +12,10 @@ import { PERMISSIONS, hasPermission } from "@/lib/rbac/permissions";
 export default function VisitsPage() {
   const { data: session } = useSession();
   const userPermissions = session?.user?.permissions || [];
-  const canCreate = hasPermission(userPermissions, PERMISSIONS.VISIT.CREATE);
-  const canEdit = hasPermission(userPermissions, PERMISSIONS.VISIT.EDIT);
-  const canDelete = hasPermission(userPermissions, PERMISSIONS.VISIT.DELETE);
+  const isAdmin = session?.user?.role === 'Admin' || session?.user?.role === 'admin';
+  const canCreate = isAdmin || hasPermission(userPermissions, PERMISSIONS.VISIT.CREATE);
+  const canEdit = isAdmin || hasPermission(userPermissions, PERMISSIONS.VISIT.EDIT);
+  const canDelete = isAdmin || hasPermission(userPermissions, PERMISSIONS.VISIT.DELETE);
 
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(true);

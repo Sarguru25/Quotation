@@ -340,7 +340,9 @@ export default function PneumaticActuators({ onSave, editProduct, onCancel }) {
   const discountedUnitPrice = discountedActuatorPrice + discountedAccessoriesPrice;
   const amountInINR = quantity * discountedUnitPrice;
 
-  // Populate from editProduct
+  // Populate from editProduct31
+  313
+  1
   useEffect(() => {
     if (editProduct && editProduct.productCategory === 'Pneumatic Actuator') {
       setValveType(editProduct.valveType || "Ball Valve");
