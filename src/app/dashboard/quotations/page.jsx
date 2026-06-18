@@ -396,15 +396,23 @@ export default function QuotationsPage() {
   }
 
   async function openEditModal(quote) {
-    const id = quote._id || quote.zoho_estimate_id || quote.estimate_id;
+    const id = quote.zoho_estimate_id || quote.estimate_id || quote._id;
     setEditingId(id);
     try {
       const res = await fetch(`/api/zoho/quotes/${id}`);
       const fullQuote = await res.json();
+      
+      if (!res.ok || fullQuote.error) {
+        showToast(fullQuote.error || "Failed to fetch existing data from Zoho.", "error");
+        setOpen(false);
+        return;
+      }
+
       if (fullQuote) {
         setForm({
           customer_id: fullQuote.customer_id || "",
           customer_name: fullQuote.customer_name || "",
+          estimate_number: fullQuote.estimate_number || "",
           reference_number: fullQuote.reference_number || "",
           subject: fullQuote.subject || "",
           date: fullQuote.date || new Date().toISOString().split("T")[0],
@@ -423,7 +431,7 @@ export default function QuotationsPage() {
             tax_id: item.tax_id || "",
           })) || [{ item_id: "", name: "", description: "", quantity: 1, rate: 0, tax_id: "" }],
           cf_quotation_creater: fullQuote.custom_fields?.find(cf => cf.api_name === "cf_quotation_creater")?.value || "",
-          salesperson: fullQuote.salesperson_id || fullQuote.salesperson_name || fullQuote.custom_fields?.find(cf => cf.api_name === "salesperson")?.value || "",
+          salesperson: fullQuote.salesperson_name || fullQuote.salesperson_id || "",
           project_name: fullQuote.project_id || fullQuote.custom_fields?.find(cf => cf.api_name === "project_name")?.value || "",
           offer_status: fullQuote.custom_fields?.find(cf => cf.api_name === "offer_status")?.value || "Open",
           estimated_margin: fullQuote.custom_fields?.find(cf => cf.api_name === "estimated_margin")?.value || "",
@@ -552,7 +560,7 @@ export default function QuotationsPage() {
             <tbody className="divide-y divide-slate-50">
               {filtered.length > 0 ? (
                 filtered.map((q) => {
-                  const id = q._id || q.zoho_estimate_id || q.estimate_id;
+                  const id = q.zoho_estimate_id || q.estimate_id || q._id;
                   return (
                   <tr key={id} className="table-row-hover hover:bg-slate-50/70 group">
                     <td className="px-5 py-4 text-slate-500 text-xs">{formatDate(q.date)}</td>
@@ -704,9 +712,10 @@ export default function QuotationsPage() {
                 <div className="md:col-span-6">
                   <select name="salesperson" value={form.salesperson || ""} onChange={handleChange} className="w-full border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500 bg-white">
                     <option value="">Select or Add Salesperson</option>
-                    {users.map(u => (
+                    <option value="Mr.Krishnarajan">Mr.Krishnarajan</option>
+                    {/* {users.map(u => (
                       <option key={u._id} value={u._id}>{u.name}</option>
-                    ))}
+                    ))} */}
                   </select>
                 </div>
                 <div className="md:col-span-3"></div>

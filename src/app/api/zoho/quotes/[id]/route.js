@@ -56,11 +56,21 @@ export async function PUT(req, context) {
       custom_fields: []
     };
 
-    if (body.cf_quotation_creater !== undefined) {
-      quotePayload.custom_fields.push({
-        api_name: "cf_quotation_creater",
-        value: body.cf_quotation_creater
-      });
+    if (body.salesperson) {
+      quotePayload.salesperson_name = body.salesperson;
+    }
+
+    const customFieldsMapping = {
+      cf_quotation_creater: "cf_quotation_creater"
+    };
+
+    for (const [bodyKey, apiName] of Object.entries(customFieldsMapping)) {
+      if (body[bodyKey] !== undefined && body[bodyKey] !== "") {
+        quotePayload.custom_fields.push({
+          api_name: apiName,
+          value: body[bodyKey]
+        });
+      }
     }
 
     const data = await updateQuotation(id, quotePayload);
