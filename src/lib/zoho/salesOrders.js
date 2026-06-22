@@ -6,6 +6,9 @@ import { zohoFetch } from "./client";
 export async function convertQuotationToSO(quotationId) {
   // First get the quotation to construct the SO payload
   const quoteData = await zohoFetch(`/estimates/${quotationId}`);
+  if (!quoteData || !quoteData.estimate) {
+    throw new Error("Quotation not found");
+  }
   const quote = quoteData.estimate;
 
   const soPayload = {
@@ -41,8 +44,34 @@ export async function convertQuotationToSO(quotationId) {
  * Get all Sales Orders
  */
 export async function getSalesOrders(params = {}) {
-  const data = await zohoFetch("/salesorders", { params });
-  return data.salesorders || [];
+  let allSalesOrders = [];
+  let page = 1;
+  let hasMore = true;
+
+  while (hasMore) {
+    const currentParams = { ...params, page };
+    const data = await zohoFetch("/salesorders", { params: currentParams });
+    
+    if (data.salesorders && data.salesorders.length > 0) {
+      allSalesOrders = [...allSalesOrders, ...data.salesorders];
+    }
+    
+    if (data.page_context && data.page_context.has_more_page) {
+      page++;
+    } else {
+      hasMore = false;
+    }
+  }
+
+  return allSalesOrders;
+}
+
+/**
+ * Get a single Sales Order
+ */
+export async function getSalesOrder(id) {
+  const data = await zohoFetch(`/salesorders/${id}`);
+  return data.salesorder || null;
 }
 
 /**
@@ -52,6 +81,62 @@ export async function createSalesOrder(soData) {
   const data = await zohoFetch("/salesorders", {
     method: "POST",
     body: soData,
+  });
+  return data;
+}
+
+/**
+ * Update a Sales Order
+ */
+export async function updateSalesOrder(id, soData) {
+  const data = await zohoFetch(`/salesorders/${id}`, {
+    method: "PUT",
+    body: soData,
+  });
+  return data;
+}
+
+/**
+ * Delete a Sales Order
+ */
+export async function deleteSalesOrder(id) {
+  const data = await zohoFetch(`/salesorders/${id}`, {
+    method: "DELETE",
+  });
+  return data;
+}
+
+/**
+ * Download Sales Order PDF
+ */
+export async function downloadSOPDF(id) {
+  const response = await zohoFetch(`/salesorders/${id}`, {
+    method: "GET",
+    headers: {
+      Accept: "application/pdf"
+    }
+  });
+  return response;
+}
+
+/**
+ * Send Sales Order via Email
+ */
+export async function sendSOEmail(id, emailData) {
+  const data = await zohoFetch(`/salesorders/${id}/email`, {
+    method: "POST",
+    body: emailData,
+  });
+  return data;
+}
+
+/**
+ * Update Sales Order Status
+ */
+export async function updateSOStatus(id, status) {
+  // Zoho provides specific endpoints to change status like /status/confirmed
+  const data = await zohoFetch(`/salesorders/${id}/status/${status}`, {
+    method: "POST",
   });
   return data;
 }

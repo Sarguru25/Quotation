@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import DataTable from "@/components/common/DataTable";
 import { RefreshCcw, Plus, X, Trash2, Edit, Users, Search, AlertCircle, Mail, Phone, Building2, Eye } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac/permissions";
@@ -20,47 +23,64 @@ function InputField({ label, ...props }) {
 }
 
 export default function CustomersPage() {
-  const router = useRouter();
   const { data: session } = useSession();
   const userPermissions = session?.user?.permissions || [];
   const canCreate = hasPermission(userPermissions, PERMISSIONS.CUSTOMER.CREATE);
   const canEdit = hasPermission(userPermissions, PERMISSIONS.CUSTOMER.EDIT);
   const canDelete = hasPermission(userPermissions, PERMISSIONS.CUSTOMER.DELETE);
 
-  const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  const page = Number(searchParams.get("page")) || 1;
+  const limit = Number(searchParams.get("limit")) || 20;
+  const search = searchParams.get("search") || "";
+
+  const [searchInput, setSearchInput] = useState(search);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(searchParams);
+      if (searchInput !== search) {
+        if (searchInput) params.set("search", searchInput);
+        else params.delete("search");
+        params.set("page", "1");
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput, pathname, router, searchParams, search]);
+
+  const updateUrlParams = (updates) => {
+    const params = new URLSearchParams(searchParams);
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === "" || value === "all") params.delete(key);
+      else params.set(key, value);
+    });
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const { data: queryData, isLoading: loading, refetch: fetchCustomers } = useQuery({
+    queryKey: ['customers', page, limit, search],
+    queryFn: async () => {
+      const res = await fetch(`/api/zoho/customers?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
+      if (!res.ok) throw new Error("Failed to fetch");
+      return res.json();
+    },
+    placeholderData: keepPreviousData
+  });
+
+  const customers = queryData?.data || [];
+  const pagination = queryData?.pagination || { total: 0, page: 1, limit: 20 };
 
   function showToast(message, type = "success") {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
-  }
-
-  async function fetchCustomers() {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/zoho/customers", { cache: "no-store" });
-      const response = await res.json();
-      
-      // Handle the new paginated DB response structure { data, meta }
-      if (response.data && Array.isArray(response.data)) {
-        setCustomers(response.data);
-      } else {
-        setCustomers(Array.isArray(response) ? response : []);
-      }
-    } catch (err) {
-      console.error(err);
-      setCustomers([]);
-    } finally {
-      setLoading(false);
+    if (type === "error") {
+      toast.error(message);
+    } else {
+      toast.success(message);
     }
   }
-
-  useEffect(() => { fetchCustomers(); }, []);
-
-
   async function deleteCustomer(id) {
     if (!window.confirm("Delete this customer? This cannot be undone.")) return;
     try {
@@ -72,14 +92,6 @@ export default function CustomersPage() {
     } catch { showToast("Something went wrong", "error"); }
   }
 
-
-
-  const filtered = customers.filter(
-    (c) =>
-      (c.customer_name || c.contact_name || "")?.toLowerCase().includes(search.toLowerCase()) ||
-      (c.company_name || "")?.toLowerCase().includes(search.toLowerCase()) ||
-      (c.email || "")?.toLowerCase().includes(search.toLowerCase())
-  );
 
   function getInitials(name) {
     return (name || "?").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -94,33 +106,8 @@ export default function CustomersPage() {
     return AVATAR_COLORS[idx];
   }
 
-  if (loading) {
-    return (
-      <div className="p-8">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="shimmer h-8 w-40 rounded-lg" />
-          <div className="shimmer h-8 w-28 rounded-lg ml-auto" />
-        </div>
-        <div className="shimmer h-12 w-full rounded-xl mb-4" />
-        {[...Array(5)].map((_, i) => (
-          <div key={i} className="shimmer h-16 w-full rounded-xl mb-2" />
-        ))}
-      </div>
-    );
-  }
-
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto">
-      {/* Toast */}
-      {toast && (
-        <div className={`fixed top-5 right-5 z-[100] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-medium
-          ${toast.type === "error" ? "bg-red-600 text-white" : "bg-slate-900 text-white"}`}>
-          {toast.type === "error" ? <AlertCircle size={16} /> : "✓"}
-          {toast.message}
-        </div>
-      )}
-
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Customers</h1>
@@ -146,120 +133,103 @@ export default function CustomersPage() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative mb-5">
-        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input
-          type="text"
-          placeholder="Search by name, company or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="input-field w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white text-slate-800 placeholder:text-slate-400"
-        />
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-100">
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Company</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Phone</th>
-                <th className="px-5 py-3.5 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+      <div className="h-[600px]">
+        <DataTable
+          columns={[
+            { label: "Customer" },
+            { label: "Company" },
+            { label: "Email" },
+            { label: "Phone" },
+            { label: "Actions", className: "text-center" }
+          ]}
+          data={customers}
+          loading={loading}
+          page={page}
+          limit={limit}
+          total={pagination.total}
+          onPageChange={(p) => updateUrlParams({ page: p })}
+          onLimitChange={(l) => updateUrlParams({ limit: l, page: 1 })}
+          onSearch={(v) => setSearchInput(v)}
+          searchValue={searchInput}
+          emptyStateText="No customers found"
+          emptyStateSubtext="Try adjusting your search or add a new customer"
+          renderRow={(c) => {
+            const id = c._id || c.zoho_customer_id || c.contact_id;
+            const name = c.customer_name || c.contact_name || "";
+            return (
+              <tr
+                key={id}
+                className="table-row-hover hover:bg-indigo-50/50 cursor-pointer transition-colors"
+                onClick={(e) => {
+                  if (e.target.closest("button") || e.target.closest("a")) return;
+                  router.push(`/dashboard/customers/${id}`);
+                }}
+              >
+                <td className="px-5 py-3.5">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full ${avatarColor(name)} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+                      {getInitials(name)}
+                    </div>
+                    <span className="font-medium text-slate-800">{name}</span>
+                  </div>
+                </td>
+                <td className="px-5 py-3.5">
+                  {c.company_name ? (
+                    <span className="flex items-center gap-1.5 text-slate-600">
+                      <Building2 size={13} className="text-slate-400" />
+                      {c.company_name}
+                    </span>
+                  ) : <span className="text-slate-300">—</span>}
+                </td>
+                <td className="px-5 py-3.5">
+                  {c.email ? (
+                    <a href={`mailto:${c.email}`} className="flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800" onClick={(e) => e.stopPropagation()}>
+                      <Mail size={13} />
+                      {c.email}
+                    </a>
+                  ) : <span className="text-slate-300">—</span>}
+                </td>
+                <td className="px-5 py-3.5">
+                  {c.phone ? (
+                    <span className="flex items-center gap-1.5 text-slate-600">
+                      <Phone size={13} className="text-slate-400" />
+                      {c.phone}
+                    </span>
+                  ) : <span className="text-slate-300">—</span>}
+                </td>
+                <td className="px-5 py-3.5 text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/customers/${id}`); }}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                      title="View"
+                    >
+                      <Eye size={15} />
+                    </button>
+                    {canEdit && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/customers/${id}/edit`); }}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                        title="Edit"
+                      >
+                        <Edit size={15} />
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteCustomer(id); }}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    )}
+                  </div>
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {filtered.length > 0 ? (
-                filtered.map((c) => {
-                  const id = c._id || c.zoho_customer_id || c.contact_id;
-                  const name = c.customer_name || c.contact_name || "";
-                  return (
-                  <tr
-                    key={id}
-                    className="table-row-hover hover:bg-indigo-50/50 cursor-pointer transition-colors"
-                    onClick={(e) => {
-                      if (e.target.closest("button")) return;
-                      router.push(`/dashboard/customers/${id}`);
-                    }}
-                  >
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full ${avatarColor(name)} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
-                          {getInitials(name)}
-                        </div>
-                        <span className="font-medium text-slate-800">{name}</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      {c.company_name ? (
-                        <span className="flex items-center gap-1.5 text-slate-600">
-                          <Building2 size={13} className="text-slate-400" />
-                          {c.company_name}
-                        </span>
-                      ) : <span className="text-slate-300">—</span>}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      {c.email ? (
-                        <a href={`mailto:${c.email}`} className="flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800">
-                          <Mail size={13} />
-                          {c.email}
-                        </a>
-                      ) : <span className="text-slate-300">—</span>}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      {c.phone ? (
-                        <span className="flex items-center gap-1.5 text-slate-600">
-                          <Phone size={13} className="text-slate-400" />
-                          {c.phone}
-                        </span>
-                      ) : <span className="text-slate-300">—</span>}
-                    </td>
-                    <td className="px-5 py-3.5 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/customers/${id}`); }}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
-                          title="View"
-                        >
-                          <Eye size={15} />
-                        </button>
-                        {canEdit && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/customers/${id}/edit`); }}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                            title="Edit"
-                          >
-                            <Edit size={15} />
-                          </button>
-                        )}
-                        {canDelete && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); deleteCustomer(id); }}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                )})
-              ) : (
-                <tr>
-                  <td colSpan="5" className="py-16 text-center">
-                    <Users size={40} className="mx-auto text-slate-200 mb-3" />
-                    <p className="text-slate-500 font-medium">No customers found</p>
-                    <p className="text-slate-400 text-xs mt-1">Try adjusting your search or add a new customer</p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+            );
+          }}
+        />
       </div>
 
 

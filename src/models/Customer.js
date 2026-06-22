@@ -17,10 +17,15 @@ const CustomerSchema = new mongoose.Schema({
   website: { type: String },
   notes: { type: String },
   tags: { type: Array },
-  created_time: { type: Date },
+  created_time: { type: Date, index: true },
   last_modified_time: { type: Date },
   syncedAt: { type: Date, default: Date.now },
   rawZohoData: { type: mongoose.Schema.Types.Mixed }
 }, { timestamps: true });
+
+CustomerSchema.index({ customer_name: 1 });
+CustomerSchema.index({ company_name: 1 });
+CustomerSchema.index({ email: 1 });
+CustomerSchema.index({ status: 1 });
 
 export default mongoose.models.Customer || mongoose.model('Customer', CustomerSchema);

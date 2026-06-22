@@ -3,6 +3,7 @@ import axios from "axios";
 import { getZohoAccessToken } from "@/lib/zoho";
 import dbConnect from "@/lib/db";
 import Customer from "@/models/Customer";
+import { syncCustomers } from "@/lib/zoho-sync/syncCustomers";
 
 const ZOHO_ORGANIZATION_ID = process.env.ZOHO_ORGANIZATION_ID;
 
@@ -102,10 +103,14 @@ export async function PUT(req, context) {
       { new: true }
     );
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: updatedCustomer,
     });
+    
+    syncCustomers('auto').catch(e => console.error("Auto-sync error:", e));
+    
+    return response;
   } catch (error) {
     console.error("PUT Customer Error:", error.message);
     return NextResponse.json(
@@ -157,10 +162,14 @@ export async function DELETE(req, context) {
     // 3. Delete from MongoDB
     await Customer.findByIdAndDelete(dbCustomer._id);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: { message: "Deleted successfully" },
     });
+    
+    syncCustomers('auto').catch(e => console.error("Auto-sync error:", e));
+    
+    return response;
   } catch (error) {
     console.error("DELETE Customer Error:", error.message);
     return NextResponse.json(

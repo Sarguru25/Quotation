@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/rbac/auth";
 import { PERMISSIONS } from "@/lib/rbac/permissions";
 import { createQuotation } from "@/lib/zoho/quotations";
+import { syncQuotations } from "@/lib/zoho-sync/syncQuotations";
 
 export async function POST(req) {
   try {
@@ -59,11 +60,28 @@ export async function POST(req) {
     // 3. Service Layer call
     const data = await createQuotation(quotePayload);
 
+    if (body.isSubmit && data?.estimate?.estimate_id) {
+      try {
+        const { submitQuotationForApproval, markQuotationAsSent } = require("@/lib/zoho/quotations");
+        try {
+          await submitQuotationForApproval(data.estimate.estimate_id);
+        } catch(e) {
+          await markQuotationAsSent(data.estimate.estimate_id);
+        }
+      } catch (err) {
+        console.error("Failed to submit quotation:", err);
+      }
+    }
+
     // 4. Return
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data,
     });
+    
+    syncQuotations('incremental').catch(e => console.error("Auto-sync error:", e));
+    
+    return response;
   } catch (error) {
     if (error.message?.includes("Forbidden") || error.message?.includes("Unauthorized")) {
       return NextResponse.json({ success: false, error: error.message }, { status: 403 });

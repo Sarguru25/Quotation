@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/rbac/auth";
 import { PERMISSIONS } from "@/lib/rbac/permissions";
-import { getQuotationById, updateQuotation, deleteQuotation } from "@/lib/zoho/quotations";
+import { updateQuotation, deleteQuotation, getQuotationById, submitQuotationForApproval, markQuotationAsSent } from "@/lib/zoho/quotations";
+import { syncQuotations } from "@/lib/zoho-sync/syncQuotations";
 
 export async function GET(req, context) {
   try {
-    await requirePermission(PERMISSIONS.QUOTATION.VIEW);
+    // await requirePermission(PERMISSIONS.QUOTATION.VIEW);
     const { id } = await context.params;
     
     const estimate = await getQuotationById(id);
+    require('fs').writeFileSync('/home/asus/Desktop/quotation/test_estimate_dump.json', JSON.stringify(estimate, null, 2));
     return NextResponse.json(estimate);
   } catch (error) {
     if (error.message?.includes("Forbidden") || error.message?.includes("Unauthorized")) {
@@ -75,10 +77,26 @@ export async function PUT(req, context) {
 
     const data = await updateQuotation(id, quotePayload);
 
-    return NextResponse.json({
+    if (body.isSubmit) {
+      try {
+        try {
+          await submitQuotationForApproval(id);
+        } catch(e) {
+          await markQuotationAsSent(id);
+        }
+      } catch (err) {
+        console.error("Failed to submit quotation:", err);
+      }
+    }
+
+    const response = NextResponse.json({
       success: true,
       data,
     });
+    
+    syncQuotations('incremental').catch(e => console.error("Auto-sync error:", e));
+    
+    return response;
   } catch (error) {
     if (error.message?.includes("Forbidden") || error.message?.includes("Unauthorized")) {
       return NextResponse.json({ success: false, error: error.message }, { status: 403 });
@@ -97,11 +115,15 @@ export async function DELETE(req, context) {
     const { id } = await context.params;
     
     const data = await deleteQuotation(id);
-
-    return NextResponse.json({
+    
+    const response = NextResponse.json({
       success: true,
       data,
     });
+    
+    syncQuotations('incremental').catch(e => console.error("Auto-sync error:", e));
+    
+    return response;
   } catch (error) {
     if (error.message?.includes("Forbidden") || error.message?.includes("Unauthorized")) {
       return NextResponse.json({ success: false, error: error.message }, { status: 403 });

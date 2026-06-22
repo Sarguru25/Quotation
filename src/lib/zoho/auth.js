@@ -32,14 +32,37 @@ export async function getZohoAccessToken(forceRefresh = false) {
       grant_type: "refresh_token",
     });
 
-    const response = await fetch(ZOHO_AUTH_URL, {
-      method: "POST",
-      cache: "no-store",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: params,
-    });
+    let response;
+    let lastError;
+    
+    // Try up to 3 times
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        response = await fetch(ZOHO_AUTH_URL, {
+          method: "POST",
+          cache: "no-store",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: params,
+          signal: AbortSignal.timeout(30000) // Increase timeout to 30s
+        });
+        
+        // If we got a response, break out of retry loop
+        break;
+      } catch (err) {
+        lastError = err;
+        console.warn(`[ZOHO AUTH] Attempt ${attempt} failed: ${err.message}`);
+        if (attempt < 3) {
+          // Wait 1 second before retrying
+          await new Promise(res => setTimeout(res, 1000));
+        }
+      }
+    }
+
+    if (!response) {
+      throw lastError || new Error("Failed to connect to Zoho Auth after 3 attempts");
+    }
 
     const data = await response.json();
 

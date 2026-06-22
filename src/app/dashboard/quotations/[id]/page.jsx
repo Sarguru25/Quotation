@@ -61,6 +61,17 @@ export default async function QuoteDetailsPage({ params }) {
   const { id } = await params;
   const quote = await getQuotation(id);
 
+  let displaySubject = quote.subject;
+  if (!displaySubject && quote.custom_fields) {
+    const cf = quote.custom_fields.find(c => 
+      c.api_name === "subject" || 
+      c.api_name === "cf_subject" || 
+      (c.label && c.label.toLowerCase().includes("subject")) ||
+      c.api_name === "cf_project_name" // sometimes people use project name for subject
+    );
+    if (cf) displaySubject = cf.value;
+  }
+
   await dbConnect();
   
   // Need to resolve realZohoId again for local models since `id` could be MongoDB _id
@@ -200,10 +211,10 @@ export default async function QuoteDetailsPage({ params }) {
             </div>
           </div>
 
-          {quote.subject && (
+          {(displaySubject || quote.subject_content || localQuote?.subject || localQuote?.rawZohoData?.subject_content || localQuote?.rawZohoData?.subject) && (
             <div className="mt-8 text-sm text-gray-800">
               <p className="mb-2">Subject :</p>
-              <p>{quote.subject}</p>
+              <p className="uppercase">{displaySubject || quote.subject_content || localQuote?.subject || localQuote?.rawZohoData?.subject_content || localQuote?.rawZohoData?.subject}</p>
             </div>
           )}
         </div>
@@ -251,8 +262,9 @@ export default async function QuoteDetailsPage({ params }) {
         </div>
 
         <div className="px-10 mt-6 flex justify-between items-start">
-          <div className="text-sm text-gray-600">
-            <p>We thank you for your enquiry and look forward for your confirmation of order.</p>
+          <div className="text-sm max-w-100 text-gray-600">
+            {/* <p>We thank you for your enquiry and look forward for your confirmation of order.</p> */}
+            {quote.notes}
           </div>
 
           <div className="w-72 text-sm">
@@ -295,6 +307,13 @@ export default async function QuoteDetailsPage({ params }) {
         </div>
 
         <div className="px-10 py-8 text-sm text-gray-800">
+          {/* {(quote.notes || localQuote?.notes || localQuote?.rawZohoData?.notes) && (
+            <div className="mb-8">
+              <p className="font-medium mb-3 text-base">Customer Notes:</p>
+              <p className="whitespace-pre-wrap text-gray-600 leading-relaxed">{quote.notes || localQuote?.notes || localQuote?.rawZohoData?.notes}</p>
+            </div>
+          )} */}
+
           <p className="font-medium mb-3 text-base">Terms & Conditions:</p>
           {quote.terms ? (
             <p className="whitespace-pre-wrap text-gray-600 mb-6 leading-relaxed">{quote.terms}</p>

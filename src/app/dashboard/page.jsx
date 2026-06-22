@@ -11,37 +11,63 @@ export default function DashboardPage() {
   const [quotes, setQuotes] = useState([]);
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [stats, setStats] = useState({
-    totalQuotes: 0,
-    approvedQuotes: 0,
-    totalVisits: 0,
-    completedVisits: 0,
+    totalSO: 0,
+    soDraft: 0,
+    soConfirmed: 0,
+    soOpen: 0,
+    soClosed: 0,
+    soRevenue: 0,
+    totalInvoices: 0,
+    invDraft: 0,
+    invSent: 0,
+    invPaid: 0,
+    invOverdue: 0,
+    invRevenue: 0,
   });
 
   async function fetchDashboardData() {
     try {
       setLoading(true);
 
-      const [quotesRes, visitsRes] = await Promise.all([
+      const [quotesRes, visitsRes, soRes, invRes] = await Promise.all([
         fetch("/api/zoho/quotes?limit=40", { cache: "no-store" }),
-        fetch("/api/visits?limit=40", { cache: "no-store" })
+        fetch("/api/visits?limit=40", { cache: "no-store" }),
+        fetch("/api/sales-orders", { cache: "no-store" }),
+        fetch("/api/invoices", { cache: "no-store" })
       ]);
 
       const quotesData = await quotesRes.json();
       const visitsData = await visitsRes.json();
+      const soData = await soRes.json();
+      const invData = await invRes.json();
 
       const quotesArray = Array.isArray(quotesData) ? quotesData : [];
       const visitsArray = visitsData.visits || [];
+      const soArray = soData.data || [];
+      const invArray = invData.data || [];
 
       setQuotes(quotesArray);
       setVisits(visitsArray);
 
+      const totalInvRev = invArray.reduce((acc, i) => acc + (i.total || 0), 0);
+      const totalOutstanding = invArray.reduce((acc, i) => acc + (i.balance || 0), 0);
+      const totalPaidAmount = totalInvRev - totalOutstanding;
+
       setStats({
-        totalQuotes: quotesArray.length,
-        approvedQuotes: quotesArray.filter((q) => q.status === "accepted").length,
-        totalVisits: visitsArray.length,
-        completedVisits: visitsArray.filter((v) => v.status === "Completed").length,
+        totalSO: soArray.length,
+        soDraft: soArray.filter((so) => so.status === "draft").length,
+        soConfirmed: soArray.filter((so) => so.status === "confirmed").length,
+        soOpen: soArray.filter((so) => so.status === "open").length,
+        soClosed: soArray.filter((so) => so.status === "closed").length,
+        soRevenue: soArray.reduce((acc, so) => acc + (so.total || 0), 0),
+        
+        totalInvoices: invArray.length,
+        invDraft: invArray.filter((i) => i.status === "draft").length,
+        invSent: invArray.filter((i) => i.status === "sent").length,
+        invPaid: invArray.filter((i) => i.status === "paid").length,
+        invOverdue: invArray.filter((i) => i.status === "overdue").length,
+        invRevenue: totalInvRev,
       });
     } catch (err) {
       console.error("Frontend Error:", err);
@@ -60,6 +86,7 @@ export default function DashboardPage() {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
+      maximumFractionDigits: 0
     }).format(amount || 0);
   };
 
@@ -73,7 +100,7 @@ export default function DashboardPage() {
       <div className="p-8">
         <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-8"></div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          {[1,2,3,4].map(i => <div key={i} className="h-32 bg-gray-200 rounded-2xl animate-pulse"></div>)}
+          {[1,2,3,4,5,6,7,8,9,10].map(i => <div key={i} className="h-32 bg-gray-200 rounded-2xl animate-pulse"></div>)}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="h-96 bg-gray-200 rounded-2xl animate-pulse"></div>
@@ -91,16 +118,23 @@ export default function DashboardPage() {
         </h1>
 
         <p className="mt-2 text-gray-500">
-          Here's what's happening with your quotations today.
+          Here's what's happening with your business today.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         {[
-          { label: "Recent Quotations", value: stats.totalQuotes, color: "border-gray-200 bg-white", text: "text-gray-900" },
-          { label: "Approved Quotes", value: stats.approvedQuotes, color: "border-green-200 bg-green-50", text: "text-green-700" },
-          { label: "Recent Visits", value: stats.totalVisits, color: "border-blue-200 bg-blue-50", text: "text-blue-700" },
-          { label: "Completed Visits", value: stats.completedVisits, color: "border-purple-200 bg-purple-50", text: "text-purple-700" },
+          { label: "SO Draft", value: stats.soDraft, color: "border-amber-200 bg-amber-50", text: "text-amber-700" },
+          { label: "SO Confirmed", value: stats.soConfirmed, color: "border-blue-200 bg-blue-50", text: "text-blue-700" },
+          { label: "SO Open", value: stats.soOpen, color: "border-indigo-200 bg-indigo-50", text: "text-indigo-700" },
+          { label: "SO Closed", value: stats.soClosed, color: "border-slate-200 bg-slate-50", text: "text-slate-700" },
+          { label: "SO Total Value", value: formatCurrency(stats.soRevenue), color: "border-emerald-200 bg-emerald-50", text: "text-emerald-700" },
+          
+          { label: "Inv Draft", value: stats.invDraft, color: "border-amber-200 bg-amber-50", text: "text-amber-700" },
+          { label: "Inv Sent", value: stats.invSent, color: "border-blue-200 bg-blue-50", text: "text-blue-700" },
+          { label: "Inv Paid", value: stats.invPaid, color: "border-green-200 bg-green-50", text: "text-green-700" },
+          { label: "Inv Overdue", value: stats.invOverdue, color: "border-red-200 bg-red-50", text: "text-red-700" },
+          { label: "Total Revenue", value: formatCurrency(stats.invRevenue), color: "border-emerald-200 bg-emerald-50", text: "text-emerald-700" },
         ].map((stat, i) => (
           <div key={i} className={`p-6 rounded-2xl border shadow-sm ${stat.color}`}>
             <p className="text-sm font-medium text-gray-500">{stat.label}</p>

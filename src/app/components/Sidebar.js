@@ -31,6 +31,8 @@ export default function Sidebar({ onClose }) {
   const allLinks = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, requiresAny: [] },
     { name: "Quotations", href: "/dashboard/quotations", icon: FileText, requiresAny: [PERMISSIONS.QUOTATION.VIEW] },
+    { name: "Sales Orders", href: "/dashboard/sales-orders", icon: ClipboardList},
+    { name: "Invoices", href: "/dashboard/invoices", icon: FileText},
     { name: "Customers", href: "/dashboard/customers", icon: Users, requiresAny: [PERMISSIONS.CUSTOMER.VIEW] },
     { name: "Custom Quote", href: "/dashboard/custom", icon:FilePlus, requiresAny: [PERMISSIONS.CUSTOM_QUOTE.VIEW] },
     { name: "Items", href: "/dashboard/items", icon: ListPlus, requiresAny: [PERMISSIONS.PRODUCT.VIEW] },

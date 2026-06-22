@@ -32,9 +32,19 @@ export default function QuotationActionBar({ quote }) {
   const handleAction = async (action, apiRoute, method = "POST") => {
     setLoadingAction(action);
     try {
-      const res = await fetch(`/api/zoho/quotations/${quote.estimate_id}/${apiRoute}`, {
-        method,
-      });
+      let res;
+      
+      if (action === "convert") {
+        res = await fetch("/api/sales-orders/convert", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ quotationId: quote.estimate_id })
+        });
+      } else {
+        res = await fetch(`/api/zoho/quotations/${quote.estimate_id}/${apiRoute}`, {
+          method,
+        });
+      }
 
       if (!res.ok) {
         const errorData = await res.json();
@@ -55,7 +65,9 @@ export default function QuotationActionBar({ quote }) {
       } else {
         const data = await res.json();
         if (action === "convert") {
-          alert(`Success: Converted to Sales Order ${data.salesorder_id}`);
+          alert(`Success: Converted to Sales Order`);
+          router.push(`/dashboard/sales-orders/${data.data.salesorder_id}`);
+          return; // Prevent refresh since we are redirecting
         } else {
           alert(`Success: ${data.message || "Action completed"}`);
         }

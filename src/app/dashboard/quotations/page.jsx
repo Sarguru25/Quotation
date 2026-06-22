@@ -3,6 +3,10 @@
 import { useEffect, useState, useRef } from "react";
 import { RefreshCcw, Plus, X, Trash2, Edit, FileText, Search, ChevronRight, AlertCircle, ListPlus, DownloadCloud } from "lucide-react";  
 import Link from "next/link";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import toast from "react-hot-toast";
+import DataTable from "@/components/common/DataTable";
 
 const STATUS_STYLES = {
   draft:    "bg-amber-100 text-amber-700 border border-amber-200",
@@ -106,19 +110,62 @@ export default function QuotationsPage() {
   const canEdit = hasPermission(userPermissions, PERMISSIONS.QUOTATION.EDIT);
   const canDelete = hasPermission(userPermissions, PERMISSIONS.QUOTATION.DELETE);
 
-  const [quotes, setQuotes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [customers, setCustomers] = useState([]);
-  const [items, setItems] = useState([]);
-  const [taxes, setTaxes] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState(null);
-
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
+  function showToast(message, type = "success") {
+    if (type === "error") {
+      toast.error(message);
+    } else {
+      toast.success(message);
+    }
+  }
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  const page = Number(searchParams.get("page")) || 1;
+  const limit = Number(searchParams.get("limit")) || 20;
+  const search = searchParams.get("search") || "";
+  const statusFilter = searchParams.get("status") || "all";
+
+  const [searchInput, setSearchInput] = useState(search);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(searchParams);
+      if (searchInput !== search) {
+        if (searchInput) params.set("search", searchInput);
+        else params.delete("search");
+        params.set("page", "1");
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput, pathname, router, searchParams, search]);
+
+  const updateUrlParams = (updates) => {
+    const params = new URLSearchParams(searchParams);
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === "" || value === "all") params.delete(key);
+      else params.set(key, value);
+    });
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const { data: queryData, isLoading: loading, refetch: fetchQuotes } = useQuery({
+    queryKey: ['quotations', page, limit, search, statusFilter],
+    queryFn: async () => {
+      const res = await fetch(`/api/zoho/quotes?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&status=${statusFilter}`);
+      if (!res.ok) throw new Error("Failed to fetch");
+      return res.json();
+    },
+    placeholderData: keepPreviousData
+  });
+
+  const quotes = queryData?.data || [];
+  const pagination = queryData?.pagination || { total: 0, page: 1, limit: 20 };
 
   const initialFormState = {
     customer_id: "",
@@ -151,25 +198,7 @@ export default function QuotationsPage() {
     setTimeout(() => setToast(null), 3500);
   }
 
-  async function fetchQuotes(isFull = false) {
-    try {
-      setLoading(true);
-      const url = "/api/zoho/quotes";
-      const res = await fetch(url, { cache: "no-store" });
-      const response = await res.json();
-      
-      if (response.data && Array.isArray(response.data)) {
-        setQuotes(response.data);
-      } else {
-        setQuotes(Array.isArray(response) ? response : []);
-      }
-    } catch (err) {
-      console.error(err);
-      setQuotes([]);
-    } finally {
-      setLoading(false);
-    }
-  }
+
 
   async function fetchCustomers() {
     try {
@@ -235,7 +264,6 @@ export default function QuotationsPage() {
   }
 
   useEffect(() => {
-    fetchQuotes();
 
     // Check for pending items from Actuators conversion
     const urlParams = new URLSearchParams(window.location.search);
@@ -355,7 +383,7 @@ export default function QuotationsPage() {
   const adjustment = parseFloat(form.adjustment) || 0;
   const total = afterDiscount + taxTotal + adjustment;
 
-  async function handleSaveQuotation() {
+  async function handleSaveQuotation(isSubmit = false) {
     if (!form.customer_id) { showToast("Please select a customer", "error"); return; }
     try {
       setSaving(true);
@@ -364,7 +392,7 @@ export default function QuotationsPage() {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, isSubmit }),
       });
       const data = await res.json();
       if (!res.ok || data.success === false) {
@@ -414,7 +442,7 @@ export default function QuotationsPage() {
           customer_name: fullQuote.customer_name || "",
           estimate_number: fullQuote.estimate_number || "",
           reference_number: fullQuote.reference_number || "",
-          subject: fullQuote.subject || "",
+          subject: fullQuote.subject || fullQuote.subject_content || "",
           date: fullQuote.date || new Date().toISOString().split("T")[0],
           expiry_date: fullQuote.expiry_date || "",
           notes: fullQuote.notes || "",
@@ -475,13 +503,6 @@ export default function QuotationsPage() {
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto">
-      {toast && (
-        <div className={`fixed top-5 right-5 z-[100] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-medium transition-all duration-300
-          ${toast.type === "error" ? "bg-red-600 text-white" : "bg-slate-900 text-white"}`}>
-          {toast.type === "error" ? <AlertCircle size={16} /> : "✓"}
-          {toast.message}
-        </div>
-      )}
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
@@ -519,19 +540,9 @@ export default function QuotationsPage() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 mb-5">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search by quote no., customer, or reference..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="input-field w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white text-slate-800 placeholder:text-slate-400"
-          />
-        </div>
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => updateUrlParams({ status: e.target.value, page: 1 })}
           className="w-full sm:w-48 px-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white text-slate-800 outline-none focus:border-indigo-500"
         >
           <option value="all">All Statuses</option>
@@ -543,87 +554,83 @@ export default function QuotationsPage() {
         </select>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-100">
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Quote No.</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Ref No.</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                <th className="px-5 py-3.5 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
-                <th className="px-5 py-3.5 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {filtered.length > 0 ? (
-                filtered.map((q) => {
-                  const id = q.zoho_estimate_id || q.estimate_id || q._id;
-                  return (
-                  <tr key={id} className="table-row-hover hover:bg-slate-50/70 group">
-                    <td className="px-5 py-4 text-slate-500 text-xs">{formatDate(q.date)}</td>
-                    <td className="px-5 py-4">
-                      <Link
-                        href={`/dashboard/quotations/${id}`}
-                        className="flex items-center gap-1 font-semibold text-indigo-600 hover:text-indigo-800 group-hover:underline"
+      <div className="h-[600px]">
+        <DataTable
+          columns={[
+            { label: "Date" },
+            { label: "Quote No." },
+            { label: "Ref No." },
+            { label: "Customer" },
+            { label: "Status" },
+            { label: "Amount", className: "text-right" },
+            { label: "Actions", className: "text-center" }
+          ]}
+          data={quotes}
+          loading={loading}
+          page={page}
+          limit={limit}
+          total={pagination.total}
+          onPageChange={(p) => updateUrlParams({ page: p })}
+          onLimitChange={(l) => updateUrlParams({ limit: l, page: 1 })}
+          onSearch={(v) => setSearchInput(v)}
+          searchValue={searchInput}
+          emptyStateText="No quotations found"
+          emptyStateSubtext="Try adjusting your search or create a new quotation"
+          renderRow={(q) => {
+            const id = q.zoho_estimate_id || q.estimate_id || q._id;
+            return (
+              <tr key={id} className="table-row-hover hover:bg-slate-50/70 group">
+                <td className="px-5 py-4 text-slate-500 text-xs">{formatDate(q.date)}</td>
+                <td className="px-5 py-4">
+                  <Link
+                    href={`/dashboard/quotations/${id}`}
+                    className="flex items-center gap-1 font-semibold text-indigo-600 hover:text-indigo-800 group-hover:underline"
+                  >
+                    <FileText size={13} className="flex-shrink-0" />
+                    {q.estimate_number}
+                    <ChevronRight size={13} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </Link>
+                </td>
+                <td className="px-5 py-4 text-slate-600">{q.reference_number || "—"}</td>
+                <td className="px-5 py-4">
+                  <div className="font-medium text-slate-800">{q.customer_name}</div>
+                </td>
+                <td className="px-5 py-4">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${STATUS_STYLES[q.status] || STATUS_STYLES.draft}`}>
+                    {q.status}
+                  </span>
+                </td>
+                <td className="px-5 py-4 text-right font-semibold text-slate-800">
+                  {formatCurrency(q.total)}
+                </td>
+                <td className="px-5 py-4 text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    {canEdit && (
+                      <button
+                        onClick={() => openEditModal(q)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                        title="Edit"
                       >
-                        <FileText size={13} className="flex-shrink-0" />
-                        {q.estimate_number}
-                        <ChevronRight size={13} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </Link>
-                    </td>
-                    <td className="px-5 py-4 text-slate-600">{q.reference_number || "—"}</td>
-                    <td className="px-5 py-4">
-                      <div className="font-medium text-slate-800">{q.customer_name}</div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${STATUS_STYLES[q.status] || STATUS_STYLES.draft}`}>
-                        {q.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-right font-semibold text-slate-800">
-                      {formatCurrency(q.total)}
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        {canEdit && (
-                          <button
-                            onClick={() => openEditModal(q)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                            title="Edit"
-                          >
-                            <Edit size={15} />
-                          </button>
-                        )}
-                        {canDelete && (
-                          <button
-                            onClick={() => deleteQuotation(id)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                )})
-              ) : (
-                <tr>
-                  <td colSpan="7" className="py-16 text-center">
-                    <FileText size={40} className="mx-auto text-slate-200 mb-3" />
-                    <p className="text-slate-500 font-medium">No quotations found</p>
-                    <p className="text-slate-400 text-xs mt-1">Try adjusting your search or create a new quotation</p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                        <Edit size={15} />
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        onClick={() => deleteQuotation(id)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            );
+          }}
+        />
       </div>
-
+      
       {open && (
         <div className="fixed top-0 bottom-0 right-0 left-0 md:left-64 bg-gray-50 flex justify-center items-start overflow-auto z-[50]">
           <div className="bg-white w-full min-h-full relative">
@@ -935,11 +942,11 @@ export default function QuotationsPage() {
 
             <div className="fixed bottom-0 left-0 md:left-64 right-0 bg-white border-t border-gray-200 px-4 md:px-8 py-4 flex justify-between items-center z-[60] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                <div className="flex gap-3">
-                  <button className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm font-medium transition-colors shadow-sm">
-                    Save as Draft
+                  <button onClick={() => handleSaveQuotation(false)} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm font-medium transition-colors shadow-sm">
+                    {saving && !form.isSubmit ? "Saving..." : "Save as Draft"}
                   </button>
-                  <button onClick={handleSaveQuotation} disabled={saving} className="bg-gray-100 border border-gray-300 text-gray-800 hover:bg-gray-200 px-5 py-2 rounded-md text-sm font-medium transition-colors">
-                    {saving ? "Saving..." : editingId ? "Update Quotation" : "Save and Submit"}
+                  <button onClick={() => handleSaveQuotation(true)} disabled={saving} className="bg-gray-100 border border-gray-300 text-gray-800 hover:bg-gray-200 px-5 py-2 rounded-md text-sm font-medium transition-colors">
+                    {saving && form.isSubmit ? "Saving..." : editingId ? "Update & Submit" : "Save and Submit"}
                   </button>
                   <button onClick={() => setOpen(false)} className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-5 py-2 rounded-md text-sm font-medium transition-colors">
                     Cancel
