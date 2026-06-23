@@ -1,19 +1,19 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { RefreshCcw, Plus, X, Trash2, Edit, FileText, Search, ChevronRight, AlertCircle, ListPlus, DownloadCloud } from "lucide-react";  
+import { RefreshCcw, Plus, X, Trash2, Edit, FileText, Search, ChevronRight, AlertCircle, ListPlus, DownloadCloud } from "lucide-react";
 import Link from "next/link";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import toast from "react-hot-toast";
-import DataTable from "@/components/common/DataTable";
+import DataTable from "@/app/components/DataTable";
 
 const STATUS_STYLES = {
-  draft:    "bg-amber-100 text-amber-700 border border-amber-200",
-  sent:     "bg-blue-100 text-blue-700 border border-blue-200",
+  draft: "bg-amber-100 text-amber-700 border border-amber-200",
+  sent: "bg-blue-100 text-blue-700 border border-blue-200",
   accepted: "bg-emerald-100 text-emerald-700 border border-emerald-200",
   declined: "bg-red-100 text-red-700 border border-red-200",
-  expired:  "bg-slate-100 text-slate-600 border border-slate-200",
+  expired: "bg-slate-100 text-slate-600 border border-slate-200",
 };
 
 function InputField({ label, ...props }) {
@@ -58,7 +58,7 @@ function SearchableSelect({ options, value, onChange, placeholder, className }) 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-  
+
   const selectedOption = options.find(o => o.value === value);
   const displayValue = isOpen ? query : (selectedOption ? selectedOption.label : "");
 
@@ -76,8 +76,8 @@ function SearchableSelect({ options, value, onChange, placeholder, className }) 
           if (!isOpen) setIsOpen(true);
         }}
         onClick={() => {
-           setQuery("");
-           setIsOpen(true);
+          setQuery("");
+          setIsOpen(true);
         }}
       />
       {isOpen && (
@@ -112,6 +112,7 @@ export default function QuotationsPage() {
 
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   function showToast(message, type = "success") {
     if (type === "error") {
@@ -164,7 +165,53 @@ export default function QuotationsPage() {
     placeholderData: keepPreviousData
   });
 
+  const { data: customersData } = useQuery({
+    queryKey: ['customers-list'],
+    queryFn: async () => {
+      const res = await fetch(`/api/zoho/customers?limit=1000`);
+      if (!res.ok) throw new Error("Failed to fetch customers");
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: usersData } = useQuery({
+    queryKey: ['users-list'],
+    queryFn: async () => {
+      const res = await fetch(`/api/users`);
+      if (!res.ok) throw new Error("Failed to fetch users");
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: itemsData } = useQuery({
+    queryKey: ['items-list'],
+    queryFn: async () => {
+      const res = await fetch(`/api/zoho/items`);
+      if (!res.ok) throw new Error("Failed to fetch items");
+      const json = await res.json();
+      return json.data ? json.data : json;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: taxesData } = useQuery({
+    queryKey: ['taxes-list'],
+    queryFn: async () => {
+      const res = await fetch(`/api/zoho/taxes`);
+      if (!res.ok) throw new Error("Failed to fetch taxes");
+      const json = await res.json();
+      return json.data ? json.data : json;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const quotes = queryData?.data || [];
+  const customers = customersData?.data || [];
+  const users = usersData || [];
+  const items = itemsData || [];
+  const taxes = taxesData || [];
   const pagination = queryData?.pagination || { total: 0, page: 1, limit: 20 };
 
   const initialFormState = {
@@ -200,61 +247,7 @@ export default function QuotationsPage() {
 
 
 
-  async function fetchCustomers() {
-    try {
-      const res = await fetch("/api/zoho/customers", { cache: "no-store" });
-      const response = await res.json();
-      if (response.data && Array.isArray(response.data)) {
-        setCustomers(response.data);
-        return response.data;
-      } else {
-        const arr = Array.isArray(response) ? response : [];
-        setCustomers(arr);
-        return arr;
-      }
-    } catch (err) {
-      console.error("Failed to fetch customers:", err);
-      return [];
-    }
-  }
 
-  async function fetchItems() {
-    try {
-      const res = await fetch("/api/zoho/items", { cache: "no-store" });
-      const response = await res.json();
-      if (response.data && Array.isArray(response.data)) {
-        setItems(response.data);
-      } else {
-        setItems(Array.isArray(response) ? response : []);
-      }
-    } catch (err) {
-      console.error("Failed to fetch items:", err);
-    }
-  }
-
-  async function fetchTaxes() {
-    try {
-      const res = await fetch("/api/zoho/taxes", { cache: "no-store" });
-      const response = await res.json();
-      if (response.data && Array.isArray(response.data)) {
-        setTaxes(response.data);
-      } else {
-        setTaxes(Array.isArray(response) ? response : []);
-      }
-    } catch (err) {
-      console.error("Failed to fetch taxes:", err);
-    }
-  }
-
-  async function fetchUsers() {
-    try {
-      const res = await fetch("/api/users", { cache: "no-store" });
-      const data = await res.json();
-      setUsers(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error("Failed to fetch users:", err);
-    }
-  }
 
   // Helper to get tax percentage from tax_id
   function getTaxPercentage(taxId) {
@@ -270,7 +263,7 @@ export default function QuotationsPage() {
     if (urlParams.get("new") === "true") {
       const pendingItems = localStorage.getItem("pending_quotation_items");
       const prefillCustomerId = urlParams.get("customerId");
-      
+
       if (pendingItems) {
         try {
           const items = JSON.parse(pendingItems);
@@ -280,7 +273,7 @@ export default function QuotationsPage() {
             customer_id: prefillCustomerId || prev.customer_id
           }));
           if (canCreate) {
-             setOpen(true);
+            setOpen(true);
           }
           localStorage.removeItem("pending_quotation_items");
           window.history.replaceState({}, '', '/dashboard/quotations');
@@ -288,51 +281,29 @@ export default function QuotationsPage() {
           console.error("Failed to load pending quotation items:", e);
         }
       } else if (prefillCustomerId) {
-         setForm(prev => ({
-            ...prev,
-            customer_id: prefillCustomerId
-         }));
-         if (canCreate) {
-             setOpen(true);
-         }
-         window.history.replaceState({}, '', '/dashboard/quotations');
+        setForm(prev => ({
+          ...prev,
+          customer_id: prefillCustomerId
+        }));
+        if (canCreate) {
+          setOpen(true);
+        }
+        window.history.replaceState({}, '', '/dashboard/quotations');
       } else if (canCreate) {
-         setOpen(true);
-         window.history.replaceState({}, '', '/dashboard/quotations');
+        setOpen(true);
+        window.history.replaceState({}, '', '/dashboard/quotations');
       }
     }
   }, [canCreate]);
 
-  // useEffect(() => {
-  //   if (open) {
-  //     // if (customers.length === 0) fetchCustomers();
-  //     // if (items.length === 0) fetchItems();
-  //     // if (taxes.length === 0) fetchTaxes();
-  //     // if (users.length === 0) fetchUsers();
-  //     fetchCustomers();
-  //     fetchItems();
-  //     fetchTaxes();
-  //     fetchUsers();
-  //   }
-  // // }, [open, customers.length, items.length, taxes.length, users.length]);
-  // }, [open]);
-
   useEffect(() => {
-    if (open) {
-      fetchCustomers().then((fetchedCustomers) => {
-          // If we have a prefilled customer_id, update the customer_name automatically
-          if (form.customer_id && !form.customer_name) {
-              const cust = fetchedCustomers?.find(c => (c.zoho_customer_id || c._id) === form.customer_id);
-              if (cust) {
-                  setForm(prev => ({ ...prev, customer_name: cust.customer_name || cust.contact_name || "" }));
-              }
-          }
-      });
-      fetchItems();
-      fetchTaxes();
-      fetchUsers();
+    if (open && form.customer_id && !form.customer_name && customers.length > 0) {
+      const cust = customers.find(c => (c.zoho_customer_id || c._id) === form.customer_id);
+      if (cust) {
+        setForm(prev => ({ ...prev, customer_name: cust.customer_name || cust.contact_name || "" }));
+      }
     }
-  }, [open]);
+  }, [open, customers, form.customer_id, form.customer_name]);
 
   const formatDate = (date) => {
     if (!date) return "—";
@@ -429,7 +400,7 @@ export default function QuotationsPage() {
     try {
       const res = await fetch(`/api/zoho/quotes/${id}`);
       const fullQuote = await res.json();
-      
+
       if (!res.ok || fullQuote.error) {
         showToast(fullQuote.error || "Failed to fetch existing data from Zoho.", "error");
         setOpen(false);
@@ -475,13 +446,13 @@ export default function QuotationsPage() {
 
   const filtered = quotes.filter(
     (q) => {
-      const matchesSearch = 
+      const matchesSearch =
         q.estimate_number?.toLowerCase().includes(search.toLowerCase()) ||
         q.customer_name?.toLowerCase().includes(search.toLowerCase()) ||
         q.reference_number?.toLowerCase().includes(search.toLowerCase());
-      
+
       const matchesStatus = statusFilter === "all" || q.status === statusFilter;
-      
+
       return matchesSearch && matchesStatus;
     }
   );
@@ -630,7 +601,7 @@ export default function QuotationsPage() {
           }}
         />
       </div>
-      
+
       {open && (
         <div className="fixed top-0 bottom-0 right-0 left-0 md:left-64 bg-gray-50 flex justify-center items-start overflow-auto z-[50]">
           <div className="bg-white w-full min-h-full relative">
@@ -676,7 +647,7 @@ export default function QuotationsPage() {
                     className="w-full border border-gray-300 rounded-l-md text-sm px-3 py-2 text-gray-700 bg-white focus:border-blue-500 outline-none"
                   />
                   <button className="bg-blue-500 hover:bg-blue-600 p-2 rounded-r-md text-white transition-colors">
-                    <Search size={18}/>
+                    <Search size={18} />
                   </button>
                 </div>
                 <div className="md:col-span-3"></div>
@@ -685,8 +656,8 @@ export default function QuotationsPage() {
                   <label className="text-sm font-medium text-red-500">Estimate#*</label>
                 </div>
                 <div className="md:col-span-6 flex gap-3">
-                   <input type="text" value="Default Transaction Series" readOnly className="w-1/2 border border-gray-300 rounded-md text-sm px-3 py-2 bg-gray-50 text-gray-500 outline-none" />
-                   <input type="text" value={form.estimate_number || ""} onChange={(e) => setForm({...form, estimate_number: e.target.value})} className="w-1/2 border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500" placeholder="e.g. EST-0001" />
+                  <input type="text" value="Default Transaction Series" readOnly className="w-1/2 border border-gray-300 rounded-md text-sm px-3 py-2 bg-gray-50 text-gray-500 outline-none" />
+                  <input type="text" value={form.estimate_number || ""} onChange={(e) => setForm({ ...form, estimate_number: e.target.value })} className="w-1/2 border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500" placeholder="e.g. EST-0001" />
                 </div>
                 <div className="md:col-span-3"></div>
 
@@ -707,9 +678,9 @@ export default function QuotationsPage() {
 
                 <div className="md:col-span-3 flex items-center md:justify-end"><label className="text-sm font-medium text-red-500">Estimate Date*</label></div>
                 <div className="md:col-span-6 flex gap-6 items-center">
-                   <input type="date" name="date" value={form.date} onChange={handleChange} className="flex-1 border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500" />
-                   <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Expiry Date</label>
-                   <input type="date" name="expiry_date" value={form.expiry_date} onChange={handleChange} className="flex-1 border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500" />
+                  <input type="date" name="date" value={form.date} onChange={handleChange} className="flex-1 border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500" />
+                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Expiry Date</label>
+                  <input type="date" name="expiry_date" value={form.expiry_date} onChange={handleChange} className="flex-1 border border-gray-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500" />
                 </div>
                 <div className="md:col-span-3"></div>
 
@@ -782,7 +753,7 @@ export default function QuotationsPage() {
                     <option value="Textile">Textile</option>
                   </select>
                 </div>
-                
+
                 <div className="md:col-span-12 border-t border-gray-100 my-4"></div>
 
                 <div className="md:col-span-3 flex items-center md:justify-end"><label className="text-sm font-medium text-gray-700">Subject</label></div>
@@ -808,80 +779,81 @@ export default function QuotationsPage() {
                       const lineTaxPct = getTaxPercentage(item.tax_id);
                       const lineTax = (lineAmount * lineTaxPct) / 100;
                       return (
-                      <tr key={index} className="hover:bg-gray-50 transition-colors group">
-                        <td className="px-5 py-3 align-top">
-                          <SearchableSelect
-                            options={items.map(zohoItem => ({
-                              value: zohoItem.zoho_item_id || zohoItem.item_id || zohoItem._id,
-                              label: zohoItem.name
-                            }))}
-                            value={item.item_id || ""}
-                            onChange={(val) => {
-                              const selectedItem = items.find(i => (i.zoho_item_id || i.item_id || i._id) === val);
-                              const updated = [...form.line_items];
-                              if (selectedItem) {
-                                updated[index] = {
-                                  ...updated[index],
-                                  item_id: val,
-                                  name: selectedItem.name,
-                                  description: selectedItem.description || selectedItem.purchase_description || "",
-                                  rate: selectedItem.rate || selectedItem.purchase_rate || 0,
-                                };
-                              } else {
-                                updated[index] = { ...updated[index], item_id: "", name: "", description: "", rate: 0 };
-                              }
-                              setForm(prev => ({ ...prev, line_items: updated }));
-                            }}
-                            placeholder="Select an item from Zoho"
-                            className="w-full bg-white border border-gray-200 rounded px-2 py-1.5 text-sm outline-none text-gray-800 font-medium focus:border-blue-500 mb-2"
-                          />
-                          <input
-                            type="text"
-                            value={item.name}
-                            onChange={e => handleItemChange(index, "name", e.target.value)}
-                            placeholder="Or type item name manually..."
-                            className="w-full text-sm text-gray-800 bg-transparent border border-gray-200 rounded px-2 py-1.5 outline-none focus:border-blue-500 mb-1"
-                          />
-                          <textarea
-                            value={item.description || ""}
-                            onChange={e => handleItemChange(index, "description", e.target.value)}
-                            placeholder="Item description..."
-                            className="w-full text-xs text-gray-500 bg-transparent border-0 focus:ring-0 outline-none resize-y-none mt-1"
-                            rows={4}
-                          />
-                        </td>
-                        <td className="px-5 py-3 align-top">
-                          <input type="number" min="1" value={item.quantity} onChange={e => handleItemChange(index, "quantity", e.target.value)} className="w-full text-right bg-transparent border border-gray-200 rounded px-2 py-1 outline-none text-sm focus:border-blue-500" />
-                        </td>
-                        <td className="px-5 py-3 align-top">
-                          <input type="number" min="0" step="any" value={item.rate} onChange={e => handleItemChange(index, "rate", e.target.value)} className="w-full text-right bg-transparent border border-gray-200 rounded px-2 py-1 outline-none text-sm focus:border-blue-500" />
-                        </td>
-                        <td className="px-5 py-3 align-top">
-                          <select
-                            value={item.tax_id || ""}
-                            onChange={e => handleItemChange(index, "tax_id", e.target.value)}
-                            className="w-full bg-transparent border border-gray-200 rounded px-2 py-1 outline-none text-sm text-gray-700 focus:border-blue-500"
-                          >
-                            <option value="">No Tax</option>
-                            {taxes.map(t => {
-                              const tid = t.zoho_tax_id || t.tax_id || t._id;
-                              return (
-                                <option key={tid} value={tid}>{t.tax_name} ({t.tax_percentage}%)</option>
-                              );
-                            })}
-                          </select>
-                          {lineTax > 0 && <div className="text-xs text-green-600 mt-1 text-right">+{formatCurrency(lineTax)}</div>}
-                        </td>
-                        <td className="px-5 py-3 align-top text-right text-sm text-gray-800 font-semibold pt-4">
-                          {formatCurrency(lineAmount)}
-                        </td>
-                        <td className="px-3 py-3 align-top text-center pt-4">
-                          <button onClick={() => removeRow(index)} className="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
-                            <X size={18} />
-                          </button>
-                        </td>
-                      </tr>
-                    );})}
+                        <tr key={index} className="hover:bg-gray-50 transition-colors group">
+                          <td className="px-5 py-3 align-top">
+                            <SearchableSelect
+                              options={items.map(zohoItem => ({
+                                value: zohoItem.zoho_item_id || zohoItem.item_id || zohoItem._id,
+                                label: zohoItem.name
+                              }))}
+                              value={item.item_id || ""}
+                              onChange={(val) => {
+                                const selectedItem = items.find(i => (i.zoho_item_id || i.item_id || i._id) === val);
+                                const updated = [...form.line_items];
+                                if (selectedItem) {
+                                  updated[index] = {
+                                    ...updated[index],
+                                    item_id: val,
+                                    name: selectedItem.name,
+                                    description: selectedItem.description || selectedItem.purchase_description || "",
+                                    rate: selectedItem.rate || selectedItem.purchase_rate || 0,
+                                  };
+                                } else {
+                                  updated[index] = { ...updated[index], item_id: "", name: "", description: "", rate: 0 };
+                                }
+                                setForm(prev => ({ ...prev, line_items: updated }));
+                              }}
+                              placeholder="Select an item from Zoho"
+                              className="w-full bg-white border border-gray-200 rounded px-2 py-1.5 text-sm outline-none text-gray-800 font-medium focus:border-blue-500 mb-2"
+                            />
+                            <input
+                              type="text"
+                              value={item.name}
+                              onChange={e => handleItemChange(index, "name", e.target.value)}
+                              placeholder="Or type item name manually..."
+                              className="w-full text-sm text-gray-800 bg-transparent border border-gray-200 rounded px-2 py-1.5 outline-none focus:border-blue-500 mb-1"
+                            />
+                            <textarea
+                              value={item.description || ""}
+                              onChange={e => handleItemChange(index, "description", e.target.value)}
+                              placeholder="Item description..."
+                              className="w-full text-xs text-gray-500 bg-transparent border-0 focus:ring-0 outline-none resize-y-none mt-1"
+                              rows={4}
+                            />
+                          </td>
+                          <td className="px-5 py-3 align-top">
+                            <input type="number" min="1" value={item.quantity} onChange={e => handleItemChange(index, "quantity", e.target.value)} className="w-full text-right bg-transparent border border-gray-200 rounded px-2 py-1 outline-none text-sm focus:border-blue-500" />
+                          </td>
+                          <td className="px-5 py-3 align-top">
+                            <input type="number" min="0" step="any" value={item.rate} onChange={e => handleItemChange(index, "rate", e.target.value)} className="w-full text-right bg-transparent border border-gray-200 rounded px-2 py-1 outline-none text-sm focus:border-blue-500" />
+                          </td>
+                          <td className="px-5 py-3 align-top">
+                            <select
+                              value={item.tax_id || ""}
+                              onChange={e => handleItemChange(index, "tax_id", e.target.value)}
+                              className="w-full bg-transparent border border-gray-200 rounded px-2 py-1 outline-none text-sm text-gray-700 focus:border-blue-500"
+                            >
+                              <option value="">No Tax</option>
+                              {taxes.map(t => {
+                                const tid = t.zoho_tax_id || t.tax_id || t._id;
+                                return (
+                                  <option key={tid} value={tid}>{t.tax_name} ({t.tax_percentage}%)</option>
+                                );
+                              })}
+                            </select>
+                            {lineTax > 0 && <div className="text-xs text-green-600 mt-1 text-right">+{formatCurrency(lineTax)}</div>}
+                          </td>
+                          <td className="px-5 py-3 align-top text-right text-sm text-gray-800 font-semibold pt-4">
+                            {formatCurrency(lineAmount)}
+                          </td>
+                          <td className="px-3 py-3 align-top text-center pt-4">
+                            <button onClick={() => removeRow(index)} className="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
+                              <X size={18} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
                 <div className="bg-gray-50 px-5 py-3 border-t border-gray-200">
@@ -902,7 +874,7 @@ export default function QuotationsPage() {
                     <textarea value={form.terms} onChange={handleChange} name="terms" rows={5} className="w-full border border-gray-300 rounded-md p-3 text-sm outline-none focus:border-blue-500 text-gray-700 shadow-sm" placeholder="All our transactions are governed by TruFlow Solutions Pvt Ltd's General Terms and Conditions for Sale..."></textarea>
                   </div>
                 </div>
-                
+
                 <div className="w-full md:w-[400px] bg-gray-50 p-6 rounded-lg border border-gray-200 shadow-sm h-fit">
                   <div className="flex justify-between items-center mb-5 text-sm">
                     <span className="font-semibold text-gray-700">Sub Total</span>
@@ -911,11 +883,11 @@ export default function QuotationsPage() {
                   <div className="flex justify-between items-center mb-5 text-sm">
                     <span className="text-gray-600">Discount</span>
                     <div className="flex items-center gap-3">
-                       <div className="flex items-center border border-gray-300 rounded overflow-hidden bg-white">
-                         <input type="number" min="0" max="100" step="any" value={form.discount_percent} onChange={e => setForm(prev => ({...prev, discount_percent: e.target.value}))} className="w-14 text-right px-2 py-1.5 text-sm outline-none" placeholder="0" />
-                         <span className="bg-gray-100 text-gray-500 px-2 py-1.5 border-l border-gray-300 font-medium">%</span>
-                       </div>
-                       <span className="text-red-500 font-medium w-20 text-right">-{formatCurrency(discountAmount)}</span>
+                      <div className="flex items-center border border-gray-300 rounded overflow-hidden bg-white">
+                        <input type="number" min="0" max="100" step="any" value={form.discount_percent} onChange={e => setForm(prev => ({ ...prev, discount_percent: e.target.value }))} className="w-14 text-right px-2 py-1.5 text-sm outline-none" placeholder="0" />
+                        <span className="bg-gray-100 text-gray-500 px-2 py-1.5 border-l border-gray-300 font-medium">%</span>
+                      </div>
+                      <span className="text-red-500 font-medium w-20 text-right">-{formatCurrency(discountAmount)}</span>
                     </div>
                   </div>
                   {taxTotal > 0 && (
@@ -927,8 +899,8 @@ export default function QuotationsPage() {
                   <div className="flex justify-between items-center mb-5 text-sm">
                     <span className="text-gray-600">Adjustment</span>
                     <div className="flex items-center gap-3">
-                       <input type="number" step="any" value={form.adjustment} onChange={e => setForm(prev => ({...prev, adjustment: e.target.value}))} className="w-24 border border-gray-300 rounded text-right px-3 py-1.5 text-sm outline-none bg-white" placeholder="0.00" />
-                       <span className="text-gray-900 font-medium w-20 text-right">{formatCurrency(adjustment)}</span>
+                      <input type="number" step="any" value={form.adjustment} onChange={e => setForm(prev => ({ ...prev, adjustment: e.target.value }))} className="w-24 border border-gray-300 rounded text-right px-3 py-1.5 text-sm outline-none bg-white" placeholder="0.00" />
+                      <span className="text-gray-900 font-medium w-20 text-right">{formatCurrency(adjustment)}</span>
                     </div>
                   </div>
                   <div className="flex justify-between items-center pt-5 border-t border-gray-200 mt-2">
@@ -941,20 +913,20 @@ export default function QuotationsPage() {
             </div>
 
             <div className="fixed bottom-0 left-0 md:left-64 right-0 bg-white border-t border-gray-200 px-4 md:px-8 py-4 flex justify-between items-center z-[60] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-               <div className="flex gap-3">
-                  <button onClick={() => handleSaveQuotation(false)} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm font-medium transition-colors shadow-sm">
-                    {saving && !form.isSubmit ? "Saving..." : "Save as Draft"}
-                  </button>
-                  <button onClick={() => handleSaveQuotation(true)} disabled={saving} className="bg-gray-100 border border-gray-300 text-gray-800 hover:bg-gray-200 px-5 py-2 rounded-md text-sm font-medium transition-colors">
-                    {saving && form.isSubmit ? "Saving..." : editingId ? "Update & Submit" : "Save and Submit"}
-                  </button>
-                  <button onClick={() => setOpen(false)} className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-5 py-2 rounded-md text-sm font-medium transition-colors">
-                    Cancel
-                  </button>
-               </div>
-               <div className="text-sm text-gray-500 flex items-center gap-2">
-                 PDF Template: <span className="font-medium text-gray-800">Truflow Final</span> <a href="#" className="text-blue-600 hover:underline">Change</a>
-               </div>
+              <div className="flex gap-3">
+                <button onClick={() => handleSaveQuotation(false)} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm font-medium transition-colors shadow-sm">
+                  {saving && !form.isSubmit ? "Saving..." : "Save as Draft"}
+                </button>
+                <button onClick={() => handleSaveQuotation(true)} disabled={saving} className="bg-gray-100 border border-gray-300 text-gray-800 hover:bg-gray-200 px-5 py-2 rounded-md text-sm font-medium transition-colors">
+                  {saving && form.isSubmit ? "Saving..." : editingId ? "Update & Submit" : "Save and Submit"}
+                </button>
+                <button onClick={() => setOpen(false)} className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-5 py-2 rounded-md text-sm font-medium transition-colors">
+                  Cancel
+                </button>
+              </div>
+              <div className="text-sm text-gray-500 flex items-center gap-2">
+                PDF Template: <span className="font-medium text-gray-800">Truflow Final</span> <a href="#" className="text-blue-600 hover:underline">Change</a>
+              </div>
             </div>
           </div>
         </div>

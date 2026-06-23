@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import toast from "react-hot-toast";
-import DataTable from "@/components/common/DataTable";
+import DataTable from "@/app/components/DataTable";
 import { useSession } from "next-auth/react";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac/permissions";
 

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import DataTable from "@/components/common/DataTable";
+import DataTable from "@/app/components/DataTable";
 import { RefreshCcw, Plus, X, Trash2, Edit, Users, Search, AlertCircle, Mail, Phone, Building2, Eye } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { PERMISSIONS, hasPermission } from "@/lib/rbac/permissions";
