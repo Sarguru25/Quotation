@@ -16,8 +16,9 @@ export async function syncQuotations(syncType = 'manual') {
     let params = { full: true };
     if (syncType === 'incremental') {
       const lastSync = await Quotation.findOne().sort({ last_modified_time: -1 }).lean();
-      if (lastSync && lastSync.rawZohoData?.last_modified_time) {
-        params.last_modified_time = new Date(lastSync.rawZohoData.last_modified_time).toISOString();
+      if (lastSync && (lastSync.last_modified_time || lastSync.rawZohoData?.last_modified_time)) {
+        const modTime = lastSync.last_modified_time || lastSync.rawZohoData.last_modified_time;
+        params.last_modified_time = new Date(modTime).toISOString().split('.')[0] + 'Z';
       }
     }
 
@@ -54,6 +55,7 @@ export async function syncQuotations(syncType = 'manual') {
                 item_total: item.item_total
               })) : [],
               syncedAt: new Date(),
+              last_modified_time: est.last_modified_time ? new Date(est.last_modified_time) : null,
               rawZohoData: est
             }
           },
@@ -63,6 +65,12 @@ export async function syncQuotations(syncType = 'manual') {
 
       const result = await Quotation.bulkWrite(bulkOps);
       successCount = result.upsertedCount + result.modifiedCount + (result.matchedCount - result.modifiedCount);
+
+      if (syncType !== 'incremental') {
+        const currentEstimateIds = estimates.map(est => est.estimate_id);
+        const deleteResult = await Quotation.deleteMany({ zoho_estimate_id: { $nin: currentEstimateIds } });
+        console.log(`Deleted ${deleteResult.deletedCount} quotations that no longer exist in Zoho Books.`);
+      }
     }
 
     syncLog.status = 'completed';

@@ -16,8 +16,9 @@ export async function syncItems(syncType = 'manual') {
     let params = {};
     if (syncType === 'incremental') {
       const lastSync = await Item.findOne().sort({ last_modified_time: -1 }).lean();
-      if (lastSync && lastSync.last_modified_time) {
-        params.last_modified_time = new Date(lastSync.last_modified_time).toISOString();
+      if (lastSync && (lastSync.last_modified_time || lastSync.rawZohoData?.last_modified_time)) {
+        const modTime = lastSync.last_modified_time || lastSync.rawZohoData.last_modified_time;
+        params.last_modified_time = new Date(modTime).toISOString().split('.')[0] + 'Z';
       }
     }
 
@@ -57,6 +58,12 @@ export async function syncItems(syncType = 'manual') {
 
       const result = await Item.bulkWrite(bulkOps);
       successCount = result.upsertedCount + result.modifiedCount + (result.matchedCount - result.modifiedCount);
+
+      if (syncType !== 'incremental') {
+        const currentItemIds = items.map(item => item.item_id);
+        const deleteResult = await Item.deleteMany({ zoho_item_id: { $nin: currentItemIds } });
+        console.log(`Deleted ${deleteResult.deletedCount} items that no longer exist in Zoho Books.`);
+      }
     }
 
     syncLog.status = 'completed';

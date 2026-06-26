@@ -350,7 +350,7 @@ export default function ItemsPage() {
                   </td>
                   <td className="px-4 py-4 text-sm">
                     <button
-                      onClick={() => openEditModal(item)}
+                      onClick={() => window.location.href = `/dashboard/items/${item.item_id || item._id}`}
                       className="text-blue-600 hover:text-blue-800 font-medium hover:underline text-left"
                     >
                       {item.name}

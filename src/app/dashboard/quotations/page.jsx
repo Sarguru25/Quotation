@@ -81,18 +81,29 @@ function SearchableSelect({ options, value, onChange, placeholder, className }) 
         }}
       />
       {isOpen && (
-        <div className="absolute z-[100] w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+        <div className="absolute z-[100] w-full h-40 mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto divide-y divide-gray-100">
           {filtered.length > 0 ? filtered.map((o, idx) => (
             <div
               key={`${o.value}-${idx}`}
-              className="px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 text-gray-700 text-left"
+              className="px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 text-gray-700 text-left flex items-center justify-between"
               onClick={() => {
                 onChange(o.value);
                 setQuery("");
                 setIsOpen(false);
               }}
             >
-              {o.label}
+              <div>
+                <div className="font-medium text-gray-800">{o.label}</div>
+                {o.isItem && (
+                  <div className="text-xs text-gray-500 mt-0.5">Rate: ₹{parseFloat(o.rate || 0).toFixed(2)}</div>
+                )}
+              </div>
+              {o.isItem && (
+                <div className="text-right">
+                  <div className="text-xs text-gray-500 font-normal">Available for Sale</div>
+                  <div className="text-xs font-semibold text-gray-800 mt-0.5">{o.availableForSale} {o.unit}</div>
+                </div>
+              )}
             </div>
           )) : (
             <div className="px-3 py-2 text-sm text-gray-500 text-left">No results found</div>
@@ -113,7 +124,7 @@ export default function QuotationsPage() {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
-
+  const [toast, setToast] = useState(null);
   function showToast(message, type = "success") {
     if (type === "error") {
       toast.error(message);
@@ -329,7 +340,7 @@ export default function QuotationsPage() {
   function addRow() {
     setForm((prev) => ({
       ...prev,
-      line_items: [...prev.line_items, { item_id: "", name: "", description: "", quantity: 1, rate: 0, tax_id: "" }],
+      line_items: [...prev.line_items, { item_id: "", name: "", description: "", quantity: 1, rate: 0, tax_id: prev.default_tax_id || "" }],
     }));
   }
 
@@ -637,10 +648,22 @@ export default function QuotationsPage() {
                     value={form.customer_id}
                     onChange={(val) => {
                       const selected = customers.find((c) => (c.zoho_customer_id || c._id) === val);
+                      const gstNo = (selected?.gst_no || selected?.rawZohoData?.gst_no || "").trim();
+                      const gst18Tax = taxes.find(t => t.tax_name === "GST18" || (t.tax_name?.includes("GST") && !t.tax_name?.includes("IGST") && t.tax_percentage === 18));
+                      const igst18Tax = taxes.find(t => t.tax_name === "IGST18" || (t.tax_name?.includes("IGST") && t.tax_percentage === 18));
+                      const defaultTaxId = gstNo.startsWith("33") 
+                        ? (gst18Tax ? (gst18Tax.zoho_tax_id || gst18Tax.tax_id || gst18Tax._id) : "")
+                        : (igst18Tax ? (igst18Tax.zoho_tax_id || igst18Tax.tax_id || igst18Tax._id) : "");
+
                       setForm((prev) => ({
                         ...prev,
                         customer_id: val,
                         customer_name: selected?.customer_name || selected?.contact_name || "",
+                        default_tax_id: defaultTaxId,
+                        line_items: prev.line_items.map(item => ({
+                          ...item,
+                          tax_id: defaultTaxId
+                        }))
                       }));
                     }}
                     placeholder="Select or add a customer"
@@ -782,10 +805,18 @@ export default function QuotationsPage() {
                         <tr key={index} className="hover:bg-gray-50 transition-colors group">
                           <td className="px-5 py-3 align-top">
                             <SearchableSelect
-                              options={items.map(zohoItem => ({
-                                value: zohoItem.zoho_item_id || zohoItem.item_id || zohoItem._id,
-                                label: zohoItem.name
-                              }))}
+                              options={items.map(zohoItem => {
+                                const rawData = zohoItem.rawZohoData || zohoItem;
+                                const availableForSale = rawData.available_for_sale ?? zohoItem.available_stock ?? 0;
+                                return {
+                                  value: zohoItem.zoho_item_id || zohoItem.item_id || zohoItem._id,
+                                  label: zohoItem.name,
+                                  rate: zohoItem.rate || zohoItem.purchase_rate || 0,
+                                  availableForSale: availableForSale,
+                                  unit: zohoItem.unit || rawData.unit || "pcs",
+                                  isItem: true
+                                };
+                              })}
                               value={item.item_id || ""}
                               onChange={(val) => {
                                 const selectedItem = items.find(i => (i.zoho_item_id || i.item_id || i._id) === val);
@@ -797,6 +828,7 @@ export default function QuotationsPage() {
                                     name: selectedItem.name,
                                     description: selectedItem.description || selectedItem.purchase_description || "",
                                     rate: selectedItem.rate || selectedItem.purchase_rate || 0,
+                                    tax_id: form.default_tax_id || updated[index].tax_id || ""
                                   };
                                 } else {
                                   updated[index] = { ...updated[index], item_id: "", name: "", description: "", rate: 0 };

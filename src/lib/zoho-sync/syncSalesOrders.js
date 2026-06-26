@@ -16,8 +16,9 @@ export async function syncSalesOrders(syncType = 'manual') {
     let params = { full: true };
     if (syncType === 'incremental') {
       const lastSync = await SalesOrder.findOne().sort({ last_modified_time: -1 }).lean();
-      if (lastSync && lastSync.rawZohoData?.last_modified_time) {
-        params.last_modified_time = new Date(lastSync.rawZohoData.last_modified_time).toISOString();
+      if (lastSync && (lastSync.last_modified_time || lastSync.rawZohoData?.last_modified_time)) {
+        const modTime = lastSync.last_modified_time || lastSync.rawZohoData.last_modified_time;
+        params.last_modified_time = new Date(modTime).toISOString().split('.')[0] + 'Z';
       }
     }
 
@@ -74,6 +75,12 @@ export async function syncSalesOrders(syncType = 'manual') {
 
       const result = await SalesOrder.bulkWrite(bulkOps);
       successCount = result.upsertedCount + result.modifiedCount + (result.matchedCount - result.modifiedCount);
+
+      if (syncType !== 'incremental') {
+        const currentSOIds = salesOrders.map(so => so.salesorder_id);
+        const deleteResult = await SalesOrder.deleteMany({ zoho_salesorder_id: { $nin: currentSOIds } });
+        console.log(`Deleted ${deleteResult.deletedCount} sales orders that no longer exist in Zoho Books.`);
+      }
     }
 
     syncLog.status = 'completed';

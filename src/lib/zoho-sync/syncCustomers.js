@@ -17,11 +17,9 @@ export async function syncCustomers(syncType = 'manual') {
     let params = {};
     if (syncType === 'incremental') {
       const lastSync = await Customer.findOne().sort({ last_modified_time: -1 }).lean();
-      if (lastSync && lastSync.last_modified_time) {
-        // format expected by Zoho: YYYY-MM-DDTHH:mm:ss-hhmm
-        // Let's just use the simplified last_modified_time query filter if zoho supports it,
-        // or just fetch all for now and overwrite. Zoho supports last_modified_time.
-        params.last_modified_time = new Date(lastSync.last_modified_time).toISOString();
+      if (lastSync && (lastSync.last_modified_time || lastSync.rawZohoData?.last_modified_time)) {
+        const modTime = lastSync.last_modified_time || lastSync.rawZohoData.last_modified_time;
+        params.last_modified_time = new Date(modTime).toISOString().split('.')[0] + 'Z';
       }
     }
 
@@ -66,6 +64,12 @@ export async function syncCustomers(syncType = 'manual') {
       // Execute bulk write
       const result = await Customer.bulkWrite(bulkOps);
       successCount = result.upsertedCount + result.modifiedCount + (result.matchedCount - result.modifiedCount);
+
+      if (syncType !== 'incremental') {
+        const currentContactIds = contacts.map(c => c.contact_id);
+        const deleteResult = await Customer.deleteMany({ zoho_customer_id: { $nin: currentContactIds } });
+        console.log(`Deleted ${deleteResult.deletedCount} customers that no longer exist in Zoho Books.`);
+      }
     }
 
     // Update log

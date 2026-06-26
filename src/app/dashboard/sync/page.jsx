@@ -44,7 +44,9 @@ export default function SyncPage() {
     { id: "customers", name: "Customers", icon: Users, description: "Sync contacts and companies from Zoho Books." },
     { id: "items", name: "Items", icon: Box, description: "Sync products, services, and inventory levels." },
     { id: "taxes", name: "Taxes", icon: Percent, description: "Sync tax rates and groups." },
-    { id: "quotations", name: "Quotations", icon: FileText, description: "Sync estimates and quotes history." }
+    { id: "quotations", name: "Quotations", icon: FileText, description: "Sync estimates and quotes history." },
+    { id: "invoices", name: "Invoices", icon: FileText, description: "Sync invoices history." },
+    { id: "sales-orders", name: "Sales Orders", icon: FileText, description: "Sync sales orders history." }
   ];
 
   return (

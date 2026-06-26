@@ -27,6 +27,7 @@ const QuotationSchema = new mongoose.Schema({
   terms: { type: String },
   line_items: [QuotationLineItemSchema],
   syncedAt: { type: Date, default: Date.now },
+  last_modified_time: { type: Date, index: true },
   rawZohoData: { type: mongoose.Schema.Types.Mixed }
 }, { timestamps: true });
 
