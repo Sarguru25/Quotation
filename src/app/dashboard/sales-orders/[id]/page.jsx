@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, FileText, DownloadCloud, Edit, CheckCircle, Truck } from "lucide-react";
+import AttachmentManager from "@/components/attachments/AttachmentManager";
 
 export default function SalesOrderDetailPage({ params }) {
   const resolvedParams = use(params);
@@ -193,6 +194,10 @@ export default function SalesOrderDetailPage({ params }) {
           </div>
         </div>
       </div>
+      <div className="w-full max-w-4xl mb-6 print:hidden">
+        <AttachmentManager module="salesorders" recordId={id} />
+      </div>
+
 
       {/* Paper UI */}
       <div className="bg-white w-full max-w-4xl shadow-xl border relative overflow-hidden print:shadow-none print:border-none print:p-0 mb-6">
@@ -379,6 +384,7 @@ export default function SalesOrderDetailPage({ params }) {
           </div>
         </div>
       </div>
+
     </div>
   );
 }

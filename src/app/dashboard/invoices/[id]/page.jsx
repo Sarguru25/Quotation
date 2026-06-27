@@ -5,16 +5,17 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, DownloadCloud, Send, Edit, CreditCard, Mail } from "lucide-react";
+import AttachmentManager from "@/components/attachments/AttachmentManager";
 
 export default function InvoiceDetailPage({ params }) {
   const resolvedParams = use(params);
   const id = resolvedParams.id;
   const router = useRouter();
-  
+
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
-  
+
   // Payment Modal State
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
@@ -57,7 +58,7 @@ export default function InvoiceDetailPage({ params }) {
     try {
       const res = await fetch(`/api/invoices/${id}/pdf`);
       if (!res.ok) throw new Error("Failed to generate PDF");
-      
+
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -163,14 +164,14 @@ export default function InvoiceDetailPage({ params }) {
             </Link>
             <span className="text-sm font-semibold text-gray-500">Status:</span>
             <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider
-              ${invoice.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 
+              ${invoice.status === 'paid' ? 'bg-emerald-100 text-emerald-700' :
                 invoice.status === 'overdue' ? 'bg-red-100 text-red-700' :
-                invoice.status === 'partially paid' ? 'bg-indigo-100 text-indigo-700' :
-                'bg-blue-100 text-blue-700'}`}>
+                  invoice.status === 'partially paid' ? 'bg-indigo-100 text-indigo-700' :
+                    'bg-blue-100 text-blue-700'}`}>
               {invoice.status}
             </span>
           </div>
-          
+
           <div className="flex flex-wrap items-center gap-2">
             <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
               <DownloadCloud size={16} />
@@ -187,24 +188,29 @@ export default function InvoiceDetailPage({ params }) {
               </Link>
             )}
             {invoice.balance > 0 && invoice.status !== 'void' && (
-               <button onClick={() => setIsPaymentModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg text-sm font-medium shadow-sm transition-colors">
-                 <CreditCard size={16} />
-                 Record Payment
-               </button>
+              <button onClick={() => setIsPaymentModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg text-sm font-medium shadow-sm transition-colors">
+                <CreditCard size={16} />
+                Record Payment
+              </button>
             )}
           </div>
         </div>
       </div>
+
+      <div className="w-full max-w-4xl mb-6 print:hidden">
+        <AttachmentManager module="invoices" recordId={id} />
+      </div>
+
 
       {/* Paper UI */}
       <div className="bg-white w-full max-w-4xl shadow-xl border relative overflow-hidden print:shadow-none print:border-none print:p-0 mb-6">
         {invoice.status && (
           <div className="absolute top-0 left-0 w-32 h-32 overflow-hidden pointer-events-none">
             <div className={`absolute -left-12 top-10 w-50 text-center text-white font-bold py-1 shadow-md transform -rotate-45 uppercase tracking-wider text-sm
-                ${invoice.status === "paid" ? "bg-green-500" : 
-                  invoice.status === "overdue" ? "bg-red-500" :
+                ${invoice.status === "paid" ? "bg-green-500" :
+                invoice.status === "overdue" ? "bg-red-500" :
                   invoice.status === "partially paid" ? "bg-indigo-500" :
-                  "bg-blue-500"}
+                    "bg-blue-500"}
               `}>
               {invoice.status}
             </div>
@@ -346,7 +352,7 @@ export default function InvoiceDetailPage({ params }) {
                 <span className="text-gray-600">{tax.tax_name} ({tax.tax_percentage}%)</span>
                 <span className="text-gray-800">{formatCurrency(tax.tax_amount)}</span>
               </div>
-            ))} 
+            ))}
 
             {invoice.adjustment > 0 && (
               <div className="flex justify-between py-2">
@@ -359,7 +365,7 @@ export default function InvoiceDetailPage({ params }) {
               <span className="font-bold text-black">Total</span>
               <span className="font-bold text-black text-base">₹{formatCurrency(invoice.total)}</span>
             </div>
-            
+
             <div className="flex justify-between py-2 mt-1">
               <span className="text-emerald-700 font-medium">Payment Made</span>
               <span className="text-emerald-700 font-medium">(-) ₹{formatCurrency(invoice.total - invoice.balance)}</span>
@@ -394,7 +400,8 @@ export default function InvoiceDetailPage({ params }) {
           </div>
         </div>
       </div>
-      
+
+
       {/* Payment Modal */}
       {isPaymentModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm print:hidden">
@@ -414,13 +421,13 @@ export default function InvoiceDetailPage({ params }) {
                     max={invoice.balance}
                     required
                     value={paymentForm.amount}
-                    onChange={(e) => setPaymentForm({...paymentForm, amount: Number(e.target.value)})}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })}
                     className="w-full border border-slate-200 rounded-lg pl-8 pr-4 py-2 text-sm focus:border-indigo-500 outline-none"
                   />
                 </div>
                 <p className="text-xs text-slate-500 mt-1">Balance Due: {formatCurrency(invoice.balance)}</p>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Payment Date *</label>
@@ -428,7 +435,7 @@ export default function InvoiceDetailPage({ params }) {
                     type="date"
                     required
                     value={paymentForm.date}
-                    onChange={(e) => setPaymentForm({...paymentForm, date: e.target.value})}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, date: e.target.value })}
                     className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 outline-none"
                   />
                 </div>
@@ -437,7 +444,7 @@ export default function InvoiceDetailPage({ params }) {
                   <select
                     required
                     value={paymentForm.payment_mode}
-                    onChange={(e) => setPaymentForm({...paymentForm, payment_mode: e.target.value})}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, payment_mode: e.target.value })}
                     className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 outline-none"
                   >
                     <option value="Bank Transfer">Bank Transfer</option>
@@ -455,16 +462,16 @@ export default function InvoiceDetailPage({ params }) {
                   type="text"
                   placeholder="e.g. Transaction ID"
                   value={paymentForm.reference_number}
-                  onChange={(e) => setPaymentForm({...paymentForm, reference_number: e.target.value})}
+                  onChange={(e) => setPaymentForm({ ...paymentForm, reference_number: e.target.value })}
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 outline-none"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Notes</label>
                 <textarea
                   value={paymentForm.description}
-                  onChange={(e) => setPaymentForm({...paymentForm, description: e.target.value})}
+                  onChange={(e) => setPaymentForm({ ...paymentForm, description: e.target.value })}
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 outline-none resize-none h-20"
                 />
               </div>

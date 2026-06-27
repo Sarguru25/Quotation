@@ -2,6 +2,7 @@ import { getZohoAccessToken } from "@/lib/zoho";
 import Image from "next/image";
 import QuotationActionBar from "./QuotationActionBar";
 import ActivityTimeline from "./ActivityTimeline";
+import AttachmentManager from "@/components/attachments/AttachmentManager";
 import dbConnect from "@/lib/db";
 import Quotation from "@/models/Quotation";
 import ActivityLog from "@/models/ActivityLog";
@@ -122,6 +123,11 @@ export default async function QuoteDetailsPage({ params }) {
       <div className="w-full max-w-4xl">
         <QuotationActionBar quote={quote} />
       </div>
+
+      <div className="w-full max-w-4xl mb-6 print:hidden">
+        <AttachmentManager module="estimates" recordId={resolvedId} />
+      </div>
+
 
       <div className="bg-white w-full max-w-4xl shadow-xl border relative overflow-hidden print:shadow-none print:border-none print:p-0 mb-6">
 
@@ -383,6 +389,7 @@ export default async function QuoteDetailsPage({ params }) {
           )}
         </div>
       )}
+
 
       <ActivityTimeline quote={quote} localQuote={localQuote} activityLogs={activityLogs} />
     </div>
