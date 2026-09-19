@@ -63,7 +63,6 @@ export async function PUT(req, context) {
     }
 
     const customFieldsMapping = {
-      cf_quotation_creater: "cf_quotation_creater",
       project_name: "cf_project_name",
       offer_status: "cf_offer_status",
       estimated_margin: "cf_estimated_margin",
@@ -86,11 +85,16 @@ export async function PUT(req, context) {
 
     if (body.isSubmit) {
       try {
+        const Quotation = (await import("@/models/Quotation")).default;
         try {
           await submitQuotationForApproval(id);
         } catch(e) {
-          await markQuotationAsSent(id);
+          console.warn("[PUT Quote] submitQuotationForApproval notice:", e.message);
         }
+        await Quotation.updateOne(
+          { $or: [{ zoho_estimate_id: id }, { _id: id }] },
+          { $set: { status: "pending_approval" } }
+        );
       } catch (err) {
         console.error("Failed to submit quotation:", err);
       }

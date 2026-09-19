@@ -9,7 +9,8 @@ export async function GET(req) {
     
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page')) || 1;
-    const limit = parseInt(searchParams.get('limit')) || 10000;
+    const limitParam = searchParams.get('limit');
+    const limit = limitParam ? parseInt(limitParam) : 20;
     const search = searchParams.get('search') || '';
     
     const result = await getItemsFromDB({ page, limit, search });

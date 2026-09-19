@@ -44,3 +44,7 @@ next-env.d.ts
 scratch_db.js
 scratch_zoho.js
 next.txt
+test_fetch.js
+
+/data
+/demo

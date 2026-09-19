@@ -1,59 +1,44 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import Link from "next/link";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import DataTable from "@/app/components/DataTable";
 import {
   Plus,
-  MoreHorizontal,
-  List,
   Image as ImageIcon,
-  ArrowUpDown,
   X,
-  Search,
   RefreshCcw,
   Edit2,
   Trash2,
   Package,
-  CheckCircle,
-  AlertCircle,
-  ChevronDown,
 } from "lucide-react";
-
-// Toast Component
-function Toast({ message, type = "success", onClose }) {
-  return (
-    <div
-      className={`fixed bottom-6 right-6 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl text-sm font-medium transition-all animate-slide-up ${
-        type === "success"
-          ? "bg-emerald-600 text-white"
-          : "bg-red-600 text-white"
-      }`}
-    >
-      {type === "success" ? (
-        <CheckCircle size={18} />
-      ) : (
-        <AlertCircle size={18} />
-      )}
-      {message}
-      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100">
-        <X size={14} />
-      </button>
-    </div>
-  );
-}
+import { useSession } from "next-auth/react";
+import { PERMISSIONS, hasPermission } from "@/lib/rbac/permissions";
 
 export default function ItemsPage() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [toast, setToast] = useState(null);
+  const { data: session } = useSession();
+  const userPermissions = session?.user?.permissions || [];
+  const canCreate = hasPermission(userPermissions, PERMISSIONS.PRODUCT.CREATE);
+  const canEdit = hasPermission(userPermissions, PERMISSIONS.PRODUCT.EDIT);
+  const canDelete = hasPermission(userPermissions, PERMISSIONS.PRODUCT.DELETE);
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  const page = Number(searchParams.get("page")) || 1;
+  const limit = Number(searchParams.get("limit")) || 20;
+  const search = searchParams.get("search") || "";
+
+  const [searchInput, setSearchInput] = useState(search);
   const [saving, setSaving] = useState(false);
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItemId, setEditingItemId] = useState(null);
-
-  // Delete confirmation
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   // Form state
   const initialFormState = {
@@ -68,51 +53,75 @@ export default function ItemsPage() {
   };
   const [form, setForm] = useState(initialFormState);
 
-  // Unit options
   const unitOptions = [
     "", "box", "cm", "dz", "ft", "g", "in", "kg", "km", "lb",
     "mg", "ml", "m", "nos", "pcs", "qty", "set",
   ];
 
-  function showToast(message, type = "success") {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
-  }
-
+  // Debounced search input handler
   useEffect(() => {
-    fetchItems();
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(searchParams);
+      if (searchInput !== search) {
+        if (searchInput) params.set("search", searchInput);
+        else params.delete("search");
+        params.set("page", "1");
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput, pathname, router, searchParams, search]);
+
+  // Handle URL param 'new=true' to auto-open modal
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("new") === "true") {
+      openCreateModal();
+      window.history.replaceState({}, '', '/dashboard/items');
+    }
   }, []);
 
-  const fetchItems = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/zoho/items");
-      const response = await res.json();
-      if (response.data && Array.isArray(response.data)) {
-        setItems(response.data);
-      } else {
-        setItems(Array.isArray(response) ? response : []);
-      }
-    } catch (error) {
-      console.error("Failed to fetch items:", error);
-      showToast("Failed to fetch items", "error");
-    } finally {
-      setLoading(false);
-    }
+  const updateUrlParams = (updates) => {
+    const params = new URLSearchParams(searchParams);
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === "" || value === "all") params.delete(key);
+      else params.set(key, value);
+    });
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
-  // Open create modal
+  const { data: queryData, isLoading: loading, refetch: fetchItems } = useQuery({
+    queryKey: ['items', page, limit, search],
+    queryFn: async () => {
+      const res = await fetch(`/api/zoho/items?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
+      if (!res.ok) throw new Error("Failed to fetch items");
+      return res.json();
+    },
+    placeholderData: keepPreviousData
+  });
+
+  const items = queryData?.data || [];
+  const pagination = queryData?.pagination || queryData?.meta || { total: 0, page: 1, limit: 20 };
+
+  function showToast(message, type = "success") {
+    if (type === "error") {
+      toast.error(message);
+    } else {
+      toast.success(message);
+    }
+  }
+
   function openCreateModal() {
     setEditingItemId(null);
     setForm(initialFormState);
     setModalOpen(true);
   }
 
-  // Open edit modal
   async function openEditModal(item) {
-    setEditingItemId(item.item_id);
+    const id = item.item_id || item.zoho_item_id || item._id;
+    setEditingItemId(id);
     try {
-      const res = await fetch(`/api/zoho/items/${item.item_id}`);
+      const res = await fetch(`/api/zoho/items/${id}`);
       const fullItem = await res.json();
       if (fullItem) {
         setForm({
@@ -127,7 +136,6 @@ export default function ItemsPage() {
         });
       }
     } catch (e) {
-      // Fallback to the list data
       setForm({
         name: item.name || "",
         product_type: item.product_type || "goods",
@@ -142,7 +150,6 @@ export default function ItemsPage() {
     setModalOpen(true);
   }
 
-  // Save (create or update)
   async function handleSaveItem() {
     if (!form.name.trim()) {
       showToast("Item name is required", "error");
@@ -169,9 +176,7 @@ export default function ItemsPage() {
         );
         return;
       }
-      showToast(
-        `Item ${editingItemId ? "updated" : "created"} successfully!`
-      );
+      showToast(`Item ${editingItemId ? "updated" : "created"} successfully!`);
       setModalOpen(false);
       setEditingItemId(null);
       setForm(initialFormState);
@@ -183,12 +188,10 @@ export default function ItemsPage() {
     }
   }
 
-  // Delete
   async function handleDeleteItem(itemId) {
+    if (!window.confirm("Delete this item? This cannot be undone.")) return;
     try {
-      const res = await fetch(`/api/zoho/items/${itemId}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`/api/zoho/items/${itemId}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok || data.success === false) {
         showToast(
@@ -199,29 +202,17 @@ export default function ItemsPage() {
         );
         return;
       }
-      showToast("Item deleted successfully!");
-      setDeleteConfirm(null);
+      showToast("Item deleted successfully");
       fetchItems();
     } catch (error) {
       showToast("An error occurred while deleting", "error");
     }
   }
 
-  // Handle form changes
   function handleChange(e) {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   }
-
-  // Filtered items
-  const filteredItems = items.filter((item) => {
-    const q = search.toLowerCase();
-    return (
-      (item.name || "").toLowerCase().includes(q) ||
-      (item.sku || "").toLowerCase().includes(q) ||
-      (item.description || "").toLowerCase().includes(q)
-    );
-  });
 
   const formatCurrency = (amount) => {
     const num = parseFloat(amount);
@@ -233,185 +224,139 @@ export default function ItemsPage() {
   };
 
   return (
-    <div className="bg-white min-h-screen">
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
-
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-600 rounded-lg">
-            <Package className="w-5 h-5 text-white" />
+          <div className="p-2.5 bg-blue-600 rounded-xl shadow-sm shadow-blue-200">
+            <Package className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-gray-800">Items</h1>
-            <p className="text-xs text-gray-500">
-              {items.length} items synced with Zoho Books
+            <h1 className="text-2xl font-bold text-slate-900">Items</h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              {pagination.total || items.length} items synced with Zoho Books
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
+          {canCreate && (
+            <button
+              onClick={openCreateModal}
+              className="btn-press flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm shadow-blue-200 transition-colors"
+            >
+              <Plus size={16} />
+              New Item
+            </button>
+          )}
           <button
-            onClick={openCreateModal}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center text-sm font-medium transition-colors shadow-sm"
+            onClick={() => fetchItems()}
+            className="btn-press flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
           >
-            <Plus className="w-4 h-4 mr-1.5" /> New Item
-          </button>
-          <button
-            onClick={fetchItems}
-            className="flex items-center gap-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-          >
-            <RefreshCcw className="w-4 h-4" />
+            <RefreshCcw size={16} />
+            Refresh
           </button>
         </div>
       </div>
 
-      <div className="px-6 py-3 border-b border-gray-100">
-        <div className="relative max-w-sm">
-          <Search
-            size={15}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Search items..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
-          />
-        </div>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              <th className="px-4 py-3 w-16"></th>
-              <th className="px-4 py-3">
-                <div className="flex items-center gap-1 cursor-pointer hover:text-gray-700">
-                  NAME <ArrowUpDown className="w-3 h-3" />
-                </div>
-              </th>
-              <th className="px-4 py-3">TYPE</th>
-              <th className="px-4 py-3">SKU</th>
-              <th className="px-4 py-3">DESCRIPTION</th>
-              <th className="px-4 py-3 text-right">SELLING PRICE</th>
-              <th className="px-4 py-3 text-right">PURCHASE RATE</th>
-              <th className="px-4 py-3 text-center w-28">ACTIONS</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {loading ? (
-              <tr>
-                <td colSpan="8" className="text-center py-16 text-gray-500">
-                  <div className="flex flex-col items-center">
-                    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <span className="font-medium">
-                      Fetching items from Zoho Books...
-                    </span>
+      <div className="h-[600px]">
+        <DataTable
+          columns={[
+            { label: "", className: "w-14" },
+            { label: "Name" },
+            { label: "Type" },
+            { label: "SKU" },
+            { label: "Description" },
+            { label: "Selling Price", className: "text-right" },
+            { label: "Purchase Rate", className: "text-right" },
+            { label: "Actions", className: "text-center" }
+          ]}
+          data={items}
+          loading={loading}
+          page={page}
+          limit={limit}
+          total={pagination.total}
+          onPageChange={(p) => updateUrlParams({ page: p })}
+          onLimitChange={(l) => updateUrlParams({ limit: l, page: 1 })}
+          onSearch={(v) => setSearchInput(v)}
+          searchValue={searchInput}
+          emptyStateText="No items found"
+          emptyStateSubtext="Try adjusting your search criteria or create a new item"
+          renderRow={(item, idx) => {
+            const id = item.item_id || item.zoho_item_id || item._id;
+            return (
+              <tr key={id || idx} className="table-row-hover hover:bg-slate-50/70 group">
+                <td className="px-5 py-4">
+                  <div className="w-10 h-10 bg-slate-100 border border-slate-200 rounded-lg flex items-center justify-center text-slate-400">
+                    <ImageIcon className="w-5 h-5 opacity-60" />
                   </div>
                 </td>
-              </tr>
-            ) : filteredItems.length === 0 ? (
-              <tr>
-                <td colSpan="8" className="text-center py-16 text-gray-500">
-                  <div className="flex flex-col items-center">
-                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                      <Package className="w-6 h-6 text-gray-400" />
-                    </div>
-                    <span className="font-medium">
-                      {search
-                        ? "No items match your search."
-                        : "No items found."}
-                    </span>
-                    {!search && (
-                      <p className="text-sm text-gray-400 mt-1">
-                        Click "New Item" to create your first item.
-                      </p>
+                <td className="px-5 py-4 text-sm font-semibold text-blue-600">
+                  <Link
+                    href={`/dashboard/items/${id}`}
+                    className="hover:underline hover:text-blue-800"
+                  >
+                    {item.name}
+                  </Link>
+                </td>
+                <td className="px-5 py-4 text-sm text-slate-600 capitalize">
+                  <span
+                    className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      item.product_type === "service"
+                        ? "bg-purple-100 text-purple-700 border border-purple-200"
+                        : "bg-sky-100 text-sky-700 border border-sky-200"
+                    }`}
+                  >
+                    {item.product_type || "goods"}
+                  </span>
+                </td>
+                <td className="px-5 py-4 text-sm text-slate-700">
+                  {item.sku || "—"}
+                </td>
+                <td
+                  className="px-5 py-4 text-sm text-slate-600 truncate max-w-[240px]"
+                  title={item.description}
+                >
+                  {item.description || "—"}
+                </td>
+                <td className="px-5 py-4 text-sm text-slate-800 text-right font-semibold whitespace-nowrap">
+                  ₹{formatCurrency(item.rate)}
+                </td>
+                <td className="px-5 py-4 text-sm text-slate-800 text-right font-semibold whitespace-nowrap">
+                  ₹{formatCurrency(item.purchase_rate)}
+                </td>
+                <td className="px-5 py-4 text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    {canEdit && (
+                      <button
+                        onClick={() => openEditModal(item)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                        title="Edit"
+                      >
+                        <Edit2 size={15} />
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        onClick={() => handleDeleteItem(id)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 size={15} />
+                      </button>
                     )}
                   </div>
                 </td>
               </tr>
-            ) : (
-              filteredItems.map((item, index) => (
-                <tr
-                  key={item.item_id || index}
-                  className="hover:bg-blue-50/30 transition-colors group"
-                >
-                  <td className="px-4 py-4">
-                    <div className="w-10 h-10 bg-gray-50 border border-gray-200 rounded flex items-center justify-center text-gray-400">
-                      <ImageIcon className="w-5 h-5 opacity-50" />
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 text-sm">
-                    <button
-                      onClick={() => window.location.href = `/dashboard/items/${item.item_id || item._id}`}
-                      className="text-blue-600 hover:text-blue-800 font-medium hover:underline text-left"
-                    >
-                      {item.name}
-                    </button>
-                  </td>
-                  <td className="px-4 py-4 text-sm text-gray-600 capitalize">
-                    <span
-                      className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                        item.product_type === "service"
-                          ? "bg-purple-50 text-purple-700"
-                          : "bg-sky-50 text-sky-700"
-                      }`}
-                    >
-                      {item.product_type || "goods"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 text-sm text-gray-700">
-                    {item.sku || "—"}
-                  </td>
-                  <td
-                    className="px-4 py-4 text-sm text-gray-600 truncate max-w-[200px]"
-                    title={item.description}
-                  >
-                    {item.description || "—"}
-                  </td>
-                  <td className="px-4 py-4 text-sm text-gray-800 text-right font-medium whitespace-nowrap">
-                    ₹{formatCurrency(item.rate)}
-                  </td>
-                  <td className="px-4 py-4 text-sm text-gray-800 text-right font-medium whitespace-nowrap">
-                    ₹{formatCurrency(item.purchase_rate)}
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => openEditModal(item)}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Edit"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirm(item)}
-                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+            );
+          }}
+        />
       </div>
 
       {modalOpen && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-start overflow-auto z-[100] pt-8 pb-8">
-          <div className="bg-white w-full max-w-2xl rounded-xl shadow-2xl relative animate-fade-in mx-4">
-            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-800">
+          <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl relative animate-fade-in mx-4">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200">
+              <h2 className="text-lg font-semibold text-slate-800">
                 {editingItemId ? "Edit Item" : "New Item"}
               </h2>
               <button
@@ -420,7 +365,7 @@ export default function ItemsPage() {
                   setEditingItemId(null);
                   setForm(initialFormState);
                 }}
-                className="p-1.5 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                className="p-1.5 rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
               >
                 <X size={20} />
               </button>
@@ -438,66 +383,60 @@ export default function ItemsPage() {
                     value={form.name}
                     onChange={handleChange}
                     placeholder="Item name"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-blue-500 bg-slate-50 focus:bg-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
                     Type
                   </label>
                   <div className="flex items-center gap-4 pt-1">
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700">
                       <input
                         type="radio"
                         name="product_type"
                         value="goods"
                         checked={form.product_type === "goods"}
                         onChange={handleChange}
-                        className="w-4 h-4 text-blue-600"
+                        className="accent-blue-600"
                       />
-                      <span className="text-sm text-gray-700">Goods</span>
+                      Goods
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700">
                       <input
                         type="radio"
                         name="product_type"
                         value="service"
                         checked={form.product_type === "service"}
                         onChange={handleChange}
-                        className="w-4 h-4 text-blue-600"
+                        className="accent-blue-600"
                       />
-                      <span className="text-sm text-gray-700">Service</span>
+                      Service
                     </label>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
                     Unit
                   </label>
-                  <div className="relative">
-                    <select
-                      name="unit"
-                      value={form.unit}
-                      onChange={handleChange}
-                      className="appearance-none w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 pr-8 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
-                    >
-                      <option value="">Select or type to add</option>
-                      {unitOptions
-                        .filter((u) => u)
-                        .map((u) => (
-                          <option key={u} value={u}>
-                            {u}
-                          </option>
-                        ))}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
-                  </div>
+                  <select
+                    name="unit"
+                    value={form.unit}
+                    onChange={handleChange}
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-blue-500 bg-slate-50 focus:bg-white"
+                  >
+                    {unitOptions.map((u) => (
+                      <option key={u} value={u}>
+                        {u ? u : "Select unit"}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
                     SKU
                   </label>
                   <input
@@ -505,207 +444,95 @@ export default function ItemsPage() {
                     name="sku"
                     value={form.sku}
                     onChange={handleChange}
-                    placeholder="Stock Keeping Unit"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
+                    placeholder="SKU code"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-blue-500 bg-slate-50 focus:bg-white"
                   />
                 </div>
-              </div>
 
-              <div className="border border-gray-200 rounded-xl overflow-hidden">
-                <div className="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center gap-2">
-                  <div className="w-4 h-4 bg-blue-600 rounded flex items-center justify-center">
-                    <CheckCircle className="w-3 h-3 text-white" />
-                  </div>
-                  <h3 className="text-sm font-semibold text-gray-800">
-                    Sales Information
-                  </h3>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Selling Price (₹)
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    name="rate"
+                    value={form.rate}
+                    onChange={handleChange}
+                    placeholder="0.00"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-blue-500 bg-slate-50 focus:bg-white"
+                  />
                 </div>
-                <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-sm font-medium text-red-500 mb-1.5">
-                      Selling Price*
-                    </label>
-                    <div className="flex items-center gap-0">
-                      <span className="bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg px-3 py-2.5 text-sm text-gray-500 font-medium">
-                        INR
-                      </span>
-                      <input
-                        type="number"
-                        name="rate"
-                        value={form.rate}
-                        onChange={handleChange}
-                        step="any"
-                        placeholder="0.00"
-                        className="w-full border border-gray-300 rounded-r-lg px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-                  <div></div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Description
-                    </label>
-                    <textarea
-                      name="description"
-                      value={form.description}
-                      onChange={handleChange}
-                      rows={3}
-                      placeholder="Sales description..."
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 resize-none"
-                    />
-                  </div>
-                </div>
-              </div>
 
-              <div className="border border-gray-200 rounded-xl overflow-hidden">
-                <div className="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center gap-2">
-                  <div className="w-4 h-4 bg-blue-600 rounded flex items-center justify-center">
-                    <CheckCircle className="w-3 h-3 text-white" />
-                  </div>
-                  <h3 className="text-sm font-semibold text-gray-800">
-                    Purchase Information
-                  </h3>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Sales Description
+                  </label>
+                  <textarea
+                    name="description"
+                    value={form.description}
+                    onChange={handleChange}
+                    rows={3}
+                    placeholder="Description for sales transactions"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-blue-500 bg-slate-50 focus:bg-white resize-none"
+                  />
                 </div>
-                <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-sm font-medium text-red-500 mb-1.5">
-                      Cost Price*
-                    </label>
-                    <div className="flex items-center gap-0">
-                      <span className="bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg px-3 py-2.5 text-sm text-gray-500 font-medium">
-                        INR
-                      </span>
-                      <input
-                        type="number"
-                        name="purchase_rate"
-                        value={form.purchase_rate}
-                        onChange={handleChange}
-                        step="any"
-                        placeholder="0.00"
-                        className="w-full border border-gray-300 rounded-r-lg px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-                  <div></div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Description
-                    </label>
-                    <textarea
-                      name="purchase_description"
-                      value={form.purchase_description}
-                      onChange={handleChange}
-                      rows={3}
-                      placeholder="Purchase description..."
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 resize-none"
-                    />
-                  </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Purchase Rate (₹)
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    name="purchase_rate"
+                    value={form.purchase_rate}
+                    onChange={handleChange}
+                    placeholder="0.00"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-blue-500 bg-slate-50 focus:bg-white"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Purchase Description
+                  </label>
+                  <textarea
+                    name="purchase_description"
+                    value={form.purchase_description}
+                    onChange={handleChange}
+                    rows={3}
+                    placeholder="Description for purchase transactions"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-blue-500 bg-slate-50 focus:bg-white resize-none"
+                  />
                 </div>
               </div>
             </div>
 
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center gap-3 bg-gray-50 rounded-b-xl">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-2xl">
               <button
-                onClick={handleSaveItem}
-                disabled={saving}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
-              >
-                {saving ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save"
-                )}
-              </button>
-              <button
+                type="button"
                 onClick={() => {
                   setModalOpen(false);
                   setEditingItemId(null);
                   setForm(initialFormState);
                 }}
-                className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-5 py-2 rounded-lg text-sm font-medium transition-colors"
+                className="px-5 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-sm font-medium transition-colors"
               >
                 Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveItem}
+                disabled={saving}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl text-sm font-medium transition-colors shadow-sm disabled:opacity-50"
+              >
+                {saving ? "Saving..." : "Save Item"}
               </button>
             </div>
           </div>
         </div>
       )}
-
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-[100]">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 animate-fade-in">
-            <div className="px-6 py-5">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                  <Trash2 className="w-5 h-5 text-red-600" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-gray-800">
-                    Delete Item
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    This action cannot be undone.
-                  </p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-700 mb-1">
-                Are you sure you want to delete{" "}
-                <strong>"{deleteConfirm.name}"</strong>?
-              </p>
-              <p className="text-xs text-gray-500">
-                This will permanently remove the item from your Zoho Books
-                account.
-              </p>
-            </div>
-            <div className="px-6 py-3 border-t border-gray-200 flex items-center justify-end gap-3 bg-gray-50 rounded-b-xl">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDeleteItem(deleteConfirm.item_id)}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <style jsx>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.2s ease-out;
-        }
-        @keyframes slide-up {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-slide-up {
-          animation: slide-up 0.3s ease-out;
-        }
-      `}</style>
     </div>
   );
 }

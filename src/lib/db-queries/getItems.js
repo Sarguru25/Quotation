@@ -19,7 +19,8 @@ export async function getItems(options = {}) {
   if (search) {
     query.$or = [
       { name: { $regex: search, $options: 'i' } },
-      { sku: { $regex: search, $options: 'i' } }
+      { sku: { $regex: search, $options: 'i' } },
+      { description: { $regex: search, $options: 'i' } }
     ];
   }
   
@@ -36,6 +37,14 @@ export async function getItems(options = {}) {
   
   return {
     data,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      hasNext: page < Math.ceil(total / limit),
+      hasPrev: page > 1
+    },
     meta: {
       total,
       page,

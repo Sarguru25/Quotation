@@ -10,7 +10,7 @@ export async function getQuotations(options = {}) {
     search = '',
     status,
     customer_id,
-    sortField = 'date',
+    sortField = 'estimate_number',
     sortOrder = 'desc' // usually latest first
   } = options;
   
@@ -27,7 +27,9 @@ export async function getQuotations(options = {}) {
   if (customer_id) query.customer_id = customer_id;
   
   const skip = (page - 1) * limit;
-  const sort = { [sortField]: sortOrder === 'asc' ? 1 : -1 };
+  const sort = sortField === 'estimate_number'
+    ? { estimate_number: sortOrder === 'asc' ? 1 : -1, date: sortOrder === 'asc' ? 1 : -1 }
+    : { [sortField]: sortOrder === 'asc' ? 1 : -1, estimate_number: -1 };
   
   const [data, total] = await Promise.all([
     Quotation.find(query).sort(sort).skip(skip).limit(limit).lean(),

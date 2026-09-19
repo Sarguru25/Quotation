@@ -46,7 +46,6 @@ export async function POST(req) {
     }
 
     const customFieldsMapping = {
-      cf_quotation_creater: "cf_quotation_creater",
       project_name: "cf_project_name",
       offer_status: "cf_offer_status",
       estimated_margin: "cf_estimated_margin",
@@ -70,12 +69,17 @@ export async function POST(req) {
 
     if (body.isSubmit && data?.estimate?.estimate_id) {
       try {
-        const { submitQuotationForApproval, markQuotationAsSent } = require("@/lib/zoho/quotations");
+        const { submitQuotationForApproval } = require("@/lib/zoho/quotations");
+        const Quotation = require("@/models/Quotation").default || require("@/models/Quotation");
         try {
           await submitQuotationForApproval(data.estimate.estimate_id);
         } catch(e) {
-          await markQuotationAsSent(data.estimate.estimate_id);
+          console.warn("[POST Quote] submitQuotationForApproval notice:", e.message);
         }
+        await Quotation.updateOne(
+          { zoho_estimate_id: data.estimate.estimate_id },
+          { $set: { status: "pending_approval" } }
+        );
       } catch (err) {
         console.error("Failed to submit quotation:", err);
       }

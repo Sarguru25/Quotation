@@ -52,7 +52,7 @@ export async function GET(req) {
       filter.status = status;
     }
 
-    const quotations = await Quotation.find(filter).sort({ createdAt: -1 });
+    const quotations = await Quotation.find(filter).sort({ estimate_number: -1, date: -1, createdAt: -1 });
 
     return NextResponse.json(quotations);
   } catch (error) {
