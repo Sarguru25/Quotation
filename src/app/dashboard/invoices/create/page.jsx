@@ -38,7 +38,7 @@ export default function CreateInvoicePage() {
       try {
         const [custRes, itemsRes, taxesRes] = await Promise.all([
           fetch("/api/zoho/customers"),
-          fetch("/api/zoho/items"),
+          fetch("/api/zoho/items?limit=10000"),
           fetch("/api/zoho/taxes")
         ]);
         

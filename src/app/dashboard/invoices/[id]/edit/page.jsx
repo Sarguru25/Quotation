@@ -28,7 +28,7 @@ export default function EditInvoicePage() {
       try {
         const [custRes, itemsRes, taxesRes, invRes] = await Promise.all([
           fetch("/api/zoho/customers"),
-          fetch("/api/zoho/items"),
+          fetch("/api/zoho/items?limit=10000"),
           fetch("/api/zoho/taxes"),
           fetch(`/api/invoices/${id}`)
         ]);
