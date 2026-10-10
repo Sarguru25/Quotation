@@ -3,6 +3,8 @@ import { requirePermission } from "@/lib/rbac/auth";
 import { PERMISSIONS } from "@/lib/rbac/permissions";
 import { markQuotationAsAccepted } from "@/lib/zoho/quotations";
 import { syncQuotations } from "@/lib/zoho-sync/syncQuotations";
+import dbConnect from "@/lib/db";
+import Quotation from "@/models/Quotation";
 
 export async function POST(request, context) {
   try {
@@ -10,6 +12,22 @@ export async function POST(request, context) {
     const { id } = await context.params;
 
     const data = await markQuotationAsAccepted(id);
+
+    await dbConnect();
+    await Quotation.findOneAndUpdate(
+      {
+        $or: [
+          { zoho_estimate_id: id },
+          ...(id.match(/^[0-9a-fA-F]{24}$/) ? [{ _id: id }] : [])
+        ]
+      },
+      {
+        $set: {
+          status: "accepted",
+          last_modified_time: new Date()
+        }
+      }
+    );
 
     const response = NextResponse.json({
       success: true,

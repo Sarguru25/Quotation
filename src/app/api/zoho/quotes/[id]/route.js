@@ -3,6 +3,8 @@ import { requirePermission } from "@/lib/rbac/auth";
 import { PERMISSIONS } from "@/lib/rbac/permissions";
 import { updateQuotation, deleteQuotation, getQuotationById, submitQuotationForApproval, markQuotationAsSent } from "@/lib/zoho/quotations";
 import { syncQuotations } from "@/lib/zoho-sync/syncQuotations";
+import dbConnect from "@/lib/db";
+import Quotation from "@/models/Quotation";
 
 export async function GET(req, context) {
   try {
@@ -84,21 +86,40 @@ export async function PUT(req, context) {
 
     const data = await updateQuotation(id, quotePayload);
 
+    // Determine target status based on user action:
+    // If Save and Submit (isSubmit === true) -> status is 'pending_approval'
+    // If Save as Draft (isSubmit === false) -> status is 'draft'
+    const newStatus = body.isSubmit ? 'pending_approval' : 'draft';
+
     if (body.isSubmit) {
       try {
-        try {
-          await submitQuotationForApproval(id);
-        } catch(e) {
-          await markQuotationAsSent(id);
-        }
+        await submitQuotationForApproval(id);
       } catch (err) {
-        console.error("Failed to submit quotation:", err);
+        console.warn("[API] Zoho submitQuotationForApproval notice:", err.message || err);
       }
     }
+
+    // Persist new status to MongoDB
+    await dbConnect();
+    await Quotation.findOneAndUpdate(
+      {
+        $or: [
+          { zoho_estimate_id: id },
+          ...(id.match(/^[0-9a-fA-F]{24}$/) ? [{ _id: id }] : [])
+        ]
+      },
+      {
+        $set: {
+          status: newStatus,
+          last_modified_time: new Date()
+        }
+      }
+    );
 
     const response = NextResponse.json({
       success: true,
       data,
+      status: newStatus,
     });
     
     syncQuotations('incremental').catch(e => console.error("Auto-sync error:", e));

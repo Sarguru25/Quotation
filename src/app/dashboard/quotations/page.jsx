@@ -10,10 +10,13 @@ import DataTable from "@/app/components/DataTable";
 
 const STATUS_STYLES = {
   draft: "bg-amber-100 text-amber-700 border border-amber-200",
+  pending_approval: "bg-yellow-100 text-yellow-700 border border-yellow-200",
+  approved: "bg-indigo-100 text-indigo-700 border border-indigo-200",
   sent: "bg-blue-100 text-blue-700 border border-blue-200",
   accepted: "bg-emerald-100 text-emerald-700 border border-emerald-200",
   declined: "bg-red-100 text-red-700 border border-red-200",
   expired: "bg-slate-100 text-slate-600 border border-slate-200",
+  invoiced: "bg-purple-100 text-purple-700 border border-purple-200",
 };
 
 function InputField({ label, ...props }) {
@@ -305,6 +308,13 @@ export default function QuotationsPage() {
         window.history.replaceState({}, '', '/dashboard/quotations');
       }
     }
+
+    const editId = urlParams.get("edit");
+    if (editId) {
+      openEditModal({ estimate_id: editId });
+      window.history.replaceState({}, '', '/dashboard/quotations');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canCreate]);
 
   useEffect(() => {
@@ -529,6 +539,8 @@ export default function QuotationsPage() {
         >
           <option value="all">All Statuses</option>
           <option value="draft">Draft</option>
+          <option value="pending_approval">Pending Approval</option>
+          <option value="approved">Approved</option>
           <option value="sent">Sent</option>
           <option value="accepted">Accepted</option>
           <option value="declined">Declined</option>
@@ -579,7 +591,7 @@ export default function QuotationsPage() {
                 </td>
                 <td className="px-5 py-4">
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${STATUS_STYLES[q.status] || STATUS_STYLES.draft}`}>
-                    {q.status}
+                    {q.status?.replace('_', ' ')}
                   </span>
                 </td>
                 <td className="px-5 py-4 text-right font-semibold text-slate-800">
@@ -950,7 +962,7 @@ export default function QuotationsPage() {
                   {saving && !form.isSubmit ? "Saving..." : "Save as Draft"}
                 </button>
                 <button onClick={() => handleSaveQuotation(true)} disabled={saving} className="bg-gray-100 border border-gray-300 text-gray-800 hover:bg-gray-200 px-5 py-2 rounded-md text-sm font-medium transition-colors">
-                  {saving && form.isSubmit ? "Saving..." : editingId ? "Update & Submit" : "Save and Submit"}
+                  {saving && form.isSubmit ? "Saving..." : editingId ? "Update & Submit for Approval" : "Save and Submit for Approval"}
                 </button>
                 <button onClick={() => setOpen(false)} className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-5 py-2 rounded-md text-sm font-medium transition-colors">
                   Cancel

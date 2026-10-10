@@ -86,6 +86,9 @@ export default async function QuoteDetailsPage({ params }) {
   const resolvedId = dbQuoteForLogs?.zoho_estimate_id || id;
   
   const localQuote = await Quotation.findOne({ zoho_estimate_id: resolvedId }).lean();
+  if (localQuote?.status) {
+    quote.status = localQuote.status;
+  }
   const activityLogs = await ActivityLog.find({ "metadata.quotationId": resolvedId }).populate('user', 'name email').lean();
   const publicLink = await PublicQuotationLink.findOne({ quotationId: resolvedId }).lean();
 
@@ -324,7 +327,7 @@ export default async function QuoteDetailsPage({ params }) {
           {quote.terms ? (
             <p className="whitespace-pre-wrap text-gray-600 mb-6 leading-relaxed">{quote.terms}</p>
           ) : (
-            <p className="text-gray-600 mb-6">All our transactions are governed by Zeetork Automation & Control Private Limited's General Terms and Conditions for Sale which shall be made available upon request.</p>
+            <p className="text-gray-600 mb-6">All our transactions are governed by Zeetork Automation & Control Private Limited&apos;s General Terms and Conditions for Sale which shall be made available upon request.</p>
           )}
 
           <div className="mt-8 pt-8 pb-10">

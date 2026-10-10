@@ -26,8 +26,8 @@ export default function QuotationActionBar({ quote }) {
   const isDraft = status === "draft";
   const isPendingApproval = status === "pending approval" || status === "pending_approval";
   const isSent = status === "sent";
-  const isAccepted = status === "accepted" || status === "approved";
   const isApproved = status === "approved";
+  const isAccepted = status === "accepted";
   const isDeclined = status === "declined";
   const isConverted = status === "invoiced" || status === "converted"; // Check exact zoho status for SO converted
 
@@ -93,7 +93,8 @@ export default function QuotationActionBar({ quote }) {
             ${status === 'draft' ? 'bg-gray-200 text-gray-700' : ''}
             ${status === 'pending_approval' || status === 'pending approval' ? 'bg-yellow-100 text-yellow-700' : ''}
             ${status === 'sent' ? 'bg-blue-100 text-blue-700' : ''}
-            ${status === 'accepted' || status === 'approved' ? 'bg-green-100 text-green-700' : ''}
+            ${status === 'approved' ? 'bg-indigo-100 text-indigo-700' : ''}
+            ${status === 'accepted' ? 'bg-emerald-100 text-emerald-700' : ''}
             ${status === 'declined' ? 'bg-red-100 text-red-700' : ''}
             ${status === 'expired' ? 'bg-orange-100 text-orange-700' : ''}
             ${status === 'invoiced' ? 'bg-purple-100 text-purple-700' : ''}
@@ -103,7 +104,16 @@ export default function QuotationActionBar({ quote }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          
+          {canEdit && (
+            <button
+              onClick={() => router.push(`/dashboard/quotations?edit=${quote.estimate_id}`)}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+              Edit
+            </button>
+          )}
+
           <button
             onClick={() => handleAction("download", "pdf", "GET")}
             disabled={loadingAction === "download"}
@@ -157,7 +167,7 @@ export default function QuotationActionBar({ quote }) {
             </button>
           )}
 
-          {!isSent && isAccepted && !isConverted  && !isPendingApproval && isApproved && canEdit && (
+          {!isSent && isApproved && !isConverted && canEdit && (
             <button
               onClick={() => handleAction("mark-sent", "mark-sent")}
               disabled={loadingAction === "mark-sent"}
@@ -168,7 +178,7 @@ export default function QuotationActionBar({ quote }) {
             </button>
           )}
 
-          {isAccepted && !isConverted && canApprove && isApproved && (
+          {isApproved && !isConverted && canApprove && (
             <button
               onClick={() => handleAction("mark-accepted", "mark-accepted")}
               disabled={loadingAction === "mark-accepted"}

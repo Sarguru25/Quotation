@@ -28,41 +28,62 @@ export async function syncQuotations(syncType = 'manual') {
     let failedCount = 0;
     
     if (estimates.length > 0) {
-      const bulkOps = estimates.map(est => ({
-        updateOne: {
-          filter: { zoho_estimate_id: est.estimate_id },
-          update: {
-            $set: {
-              estimate_number: est.estimate_number,
-              customer_id: est.customer_id,
-              customer_name: est.customer_name,
-              date: est.date ? new Date(est.date) : null,
-              expiry_date: est.expiry_date ? new Date(est.expiry_date) : null,
-              status: est.status,
-              currency_code: est.currency_code,
-              sub_total: est.sub_total,
-              tax_total: est.tax_total,
-              total: est.total,
-              salesperson_name: est.salesperson_name,
-              subject: est.subject_content || est.subject,
-              notes: est.notes,
-              terms: est.terms,
-              line_items: est.line_items ? est.line_items.map(item => ({
-                item_id: item.item_id,
-                name: item.name,
-                quantity: item.quantity,
-                rate: item.rate,
-                tax_percentage: item.tax_percentage,
-                item_total: item.item_total
-              })) : [],
-              syncedAt: new Date(),
-              last_modified_time: est.last_modified_time ? new Date(est.last_modified_time) : null,
-              rawZohoData: est
-            }
-          },
-          upsert: true
+      // Find existing quotations in MongoDB to protect local draft or pending_approval statuses
+      // from being accidentally overwritten by Zoho's stale approved/accepted/sent statuses
+      const estimateIds = estimates.map(est => est.estimate_id);
+      const existingQuotes = await Quotation.find({
+        zoho_estimate_id: { $in: estimateIds }
+      }).select('zoho_estimate_id status').lean();
+      const existingStatusMap = new Map(existingQuotes.map(q => [q.zoho_estimate_id, q.status]));
+
+      const bulkOps = estimates.map(est => {
+        const currentDbStatus = existingStatusMap.get(est.estimate_id);
+        let finalStatus = est.status;
+        
+        // If locally modified to draft or pending_approval, preserve it until approved/accepted
+        if (
+          (currentDbStatus === 'draft' || currentDbStatus === 'pending_approval') &&
+          (est.status === 'approved' || est.status === 'accepted' || est.status === 'sent')
+        ) {
+          finalStatus = currentDbStatus;
         }
-      }));
+
+        return {
+          updateOne: {
+            filter: { zoho_estimate_id: est.estimate_id },
+            update: {
+              $set: {
+                estimate_number: est.estimate_number,
+                customer_id: est.customer_id,
+                customer_name: est.customer_name,
+                date: est.date ? new Date(est.date) : null,
+                expiry_date: est.expiry_date ? new Date(est.expiry_date) : null,
+                status: finalStatus,
+                currency_code: est.currency_code,
+                sub_total: est.sub_total,
+                tax_total: est.tax_total,
+                total: est.total,
+                salesperson_name: est.salesperson_name,
+                subject: est.subject_content || est.subject,
+                notes: est.notes,
+                terms: est.terms,
+                line_items: est.line_items ? est.line_items.map(item => ({
+                  item_id: item.item_id,
+                  name: item.name,
+                  quantity: item.quantity,
+                  rate: item.rate,
+                  tax_percentage: item.tax_percentage,
+                  item_total: item.item_total
+                })) : [],
+                syncedAt: new Date(),
+                last_modified_time: est.last_modified_time ? new Date(est.last_modified_time) : null,
+                rawZohoData: est
+              }
+            },
+            upsert: true
+          }
+        };
+      });
 
       const result = await Quotation.bulkWrite(bulkOps);
       successCount = result.upsertedCount + result.modifiedCount + (result.matchedCount - result.modifiedCount);
