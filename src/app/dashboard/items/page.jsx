@@ -65,6 +65,8 @@ export default function ItemsPage() {
     description: "",
     purchase_rate: "",
     purchase_description: "",
+    is_sales: true,
+    is_purchase: true,
   };
   const [form, setForm] = useState(initialFormState);
 
@@ -78,10 +80,6 @@ export default function ItemsPage() {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
   }
-
-  useEffect(() => {
-    fetchItems();
-  }, []);
 
   const fetchItems = async () => {
     try {
@@ -101,6 +99,33 @@ export default function ItemsPage() {
     }
   };
 
+  useEffect(() => {
+    let ignore = false;
+    fetch("/api/zoho/items")
+      .then((res) => res.json())
+      .then((response) => {
+        if (ignore) return;
+        if (response.data && Array.isArray(response.data)) {
+          setItems(response.data);
+        } else {
+          setItems(Array.isArray(response) ? response : []);
+        }
+      })
+      .catch((error) => {
+        if (!ignore) {
+          console.error("Failed to fetch items:", error);
+          showToast("Failed to fetch items", "error");
+        }
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
   // Open create modal
   function openCreateModal() {
     setEditingItemId(null);
@@ -114,16 +139,19 @@ export default function ItemsPage() {
     try {
       const res = await fetch(`/api/zoho/items/${item.item_id}`);
       const fullItem = await res.json();
-      if (fullItem) {
+      const itemData = fullItem?.rawZohoData || fullItem?.item || fullItem;
+      if (itemData) {
         setForm({
-          name: fullItem.name || "",
-          product_type: fullItem.product_type || "goods",
-          unit: fullItem.unit || "",
-          sku: fullItem.sku || "",
-          rate: fullItem.rate || "",
-          description: fullItem.description || "",
-          purchase_rate: fullItem.purchase_rate || "",
-          purchase_description: fullItem.purchase_description || "",
+          name: itemData.name || "",
+          product_type: itemData.product_type || "goods",
+          unit: itemData.unit || "",
+          sku: itemData.sku || "",
+          rate: itemData.rate !== undefined && itemData.rate !== null ? itemData.rate : "",
+          description: itemData.description || "",
+          purchase_rate: itemData.purchase_rate !== undefined && itemData.purchase_rate !== null ? itemData.purchase_rate : "",
+          purchase_description: itemData.purchase_description || "",
+          is_sales: true,
+          is_purchase: true,
         });
       }
     } catch (e) {
@@ -133,10 +161,12 @@ export default function ItemsPage() {
         product_type: item.product_type || "goods",
         unit: item.unit || "",
         sku: item.sku || "",
-        rate: item.rate || "",
+        rate: item.rate !== undefined && item.rate !== null ? item.rate : "",
         description: item.description || "",
-        purchase_rate: item.purchase_rate || "",
+        purchase_rate: item.purchase_rate !== undefined && item.purchase_rate !== null ? item.purchase_rate : "",
         purchase_description: item.purchase_description || "",
+        is_sales: true,
+        is_purchase: true,
       });
     }
     setModalOpen(true);
@@ -331,7 +361,7 @@ export default function ItemsPage() {
                     </span>
                     {!search && (
                       <p className="text-sm text-gray-400 mt-1">
-                        Click "New Item" to create your first item.
+                        Click &quot;New Item&quot; to create your first item.
                       </p>
                     )}
                   </div>
@@ -653,7 +683,7 @@ export default function ItemsPage() {
               </div>
               <p className="text-sm text-gray-700 mb-1">
                 Are you sure you want to delete{" "}
-                <strong>"{deleteConfirm.name}"</strong>?
+                <strong>&quot;{deleteConfirm.name}&quot;</strong>?
               </p>
               <p className="text-xs text-gray-500">
                 This will permanently remove the item from your Zoho Books

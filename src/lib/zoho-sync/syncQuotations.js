@@ -28,25 +28,8 @@ export async function syncQuotations(syncType = 'manual') {
     let failedCount = 0;
     
     if (estimates.length > 0) {
-      // Find existing quotations in MongoDB to protect local draft or pending_approval statuses
-      // from being accidentally overwritten by Zoho's stale approved/accepted/sent statuses
-      const estimateIds = estimates.map(est => est.estimate_id);
-      const existingQuotes = await Quotation.find({
-        zoho_estimate_id: { $in: estimateIds }
-      }).select('zoho_estimate_id status').lean();
-      const existingStatusMap = new Map(existingQuotes.map(q => [q.zoho_estimate_id, q.status]));
-
       const bulkOps = estimates.map(est => {
-        const currentDbStatus = existingStatusMap.get(est.estimate_id);
-        let finalStatus = est.status;
-        
-        // If locally modified to draft or pending_approval, preserve it until approved/accepted
-        if (
-          (currentDbStatus === 'draft' || currentDbStatus === 'pending_approval') &&
-          (est.status === 'approved' || est.status === 'accepted' || est.status === 'sent')
-        ) {
-          finalStatus = currentDbStatus;
-        }
+        const finalStatus = est.status ? est.status.toLowerCase() : 'draft';
 
         return {
           updateOne: {
@@ -54,6 +37,7 @@ export async function syncQuotations(syncType = 'manual') {
             update: {
               $set: {
                 estimate_number: est.estimate_number,
+                reference_number: est.reference_number || '',
                 customer_id: est.customer_id,
                 customer_name: est.customer_name,
                 date: est.date ? new Date(est.date) : null,

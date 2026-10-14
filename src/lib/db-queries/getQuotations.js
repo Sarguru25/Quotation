@@ -10,8 +10,8 @@ export async function getQuotations(options = {}) {
     search = '',
     status,
     customer_id,
-    sortField = 'date',
-    sortOrder = 'desc' // usually latest first
+    sortField = 'estimate_number',
+    sortOrder = 'desc' // sequential quote numbers descending, matching Zoho Books
   } = options;
   
   const query = {};
@@ -19,15 +19,19 @@ export async function getQuotations(options = {}) {
   if (search) {
     query.$or = [
       { estimate_number: { $regex: search, $options: 'i' } },
-      { customer_name: { $regex: search, $options: 'i' } }
+      { customer_name: { $regex: search, $options: 'i' } },
+      { reference_number: { $regex: search, $options: 'i' } }
     ];
   }
   
-  if (status) query.status = status;
+  if (status && status !== 'all') query.status = status.toLowerCase();
   if (customer_id) query.customer_id = customer_id;
   
   const skip = (page - 1) * limit;
-  const sort = { [sortField]: sortOrder === 'asc' ? 1 : -1 };
+  const direction = sortOrder === 'asc' ? 1 : -1;
+  const sort = sortField === 'estimate_number'
+    ? { estimate_number: direction }
+    : { [sortField]: direction, estimate_number: -1 };
   
   const [data, total] = await Promise.all([
     Quotation.find(query).sort(sort).skip(skip).limit(limit).lean(),

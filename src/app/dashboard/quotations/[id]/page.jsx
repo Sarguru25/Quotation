@@ -86,9 +86,7 @@ export default async function QuoteDetailsPage({ params }) {
   const resolvedId = dbQuoteForLogs?.zoho_estimate_id || id;
   
   const localQuote = await Quotation.findOne({ zoho_estimate_id: resolvedId }).lean();
-  if (localQuote?.status) {
-    quote.status = localQuote.status;
-  }
+  quote.status = (quote.status || localQuote?.status || "draft").toLowerCase();
   const activityLogs = await ActivityLog.find({ "metadata.quotationId": resolvedId }).populate('user', 'name email').lean();
   const publicLink = await PublicQuotationLink.findOne({ quotationId: resolvedId }).lean();
 
@@ -137,10 +135,19 @@ export default async function QuoteDetailsPage({ params }) {
         {quote.status && (
           <div className="absolute top-0 left-0 w-32 h-32 overflow-hidden pointer-events-none">
             <div className={`absolute -left-12 top-10 w-50 text-center text-white font-bold py-1 shadow-md transform -rotate-45 uppercase tracking-wider text-sm
-                ${quote.status === "accepted" || quote.status === "approved" || quote.status === "sent" ? "bg-blue-500" : "bg-yellow-500"}
+                ${quote.status === "accepted" || quote.status === "approved" ? "bg-emerald-600" : (quote.status === "sent" ? "bg-blue-600" : (quote.status === "declined" || quote.status === "rejected" ? "bg-red-600" : "bg-amber-500"))}
               `}>
-              {quote.status}
+              {quote.status.replace('_', ' ')}
             </div>
+          </div>
+        )}
+
+        {localQuote?.rejectionReason && (quote.status === "declined" || quote.status === "rejected") && (
+          <div className="mx-10 mt-8 mb-2 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm print:hidden">
+            <div className="font-semibold flex items-center gap-1.5">
+              <span>Rejection Reason:</span>
+            </div>
+            <p className="mt-1 text-red-700">{localQuote.rejectionReason}</p>
           </div>
         )}
 

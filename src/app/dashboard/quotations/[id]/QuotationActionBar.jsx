@@ -42,6 +42,17 @@ export default function QuotationActionBar({ quote }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ quotationId: quote.estimate_id })
         });
+      } else if (action === "reject") {
+        const reason = window.prompt("Please enter the reason for rejecting this quotation:");
+        if (reason === null) {
+          setLoadingAction(null);
+          return;
+        }
+        res = await fetch(`/api/zoho/quotations/${quote.estimate_id}/reject`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reason: reason.trim() || "Rejected by reviewer" })
+        });
       } else {
         res = await fetch(`/api/zoho/quotations/${quote.estimate_id}/${apiRoute}`, {
           method,
@@ -95,7 +106,7 @@ export default function QuotationActionBar({ quote }) {
             ${status === 'sent' ? 'bg-blue-100 text-blue-700' : ''}
             ${status === 'approved' ? 'bg-indigo-100 text-indigo-700' : ''}
             ${status === 'accepted' ? 'bg-emerald-100 text-emerald-700' : ''}
-            ${status === 'declined' ? 'bg-red-100 text-red-700' : ''}
+            ${status === 'declined' || status === 'rejected' ? 'bg-red-100 text-red-700' : ''}
             ${status === 'expired' ? 'bg-orange-100 text-orange-700' : ''}
             ${status === 'invoiced' ? 'bg-purple-100 text-purple-700' : ''}
           `}>
@@ -157,14 +168,24 @@ export default function QuotationActionBar({ quote }) {
           )}
 
           {isPendingApproval && canApprove && (
-            <button
-              onClick={() => handleAction("approve", "approve")}
-              disabled={loadingAction === "approve"}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 transition-colors"
-            >
-              {loadingAction === "approve" && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-              Approve
-            </button>
+            <>
+              <button
+                onClick={() => handleAction("approve", "approve")}
+                disabled={loadingAction === "approve"}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 transition-colors shadow-sm"
+              >
+                {loadingAction === "approve" && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                Approve
+              </button>
+              <button
+                onClick={() => handleAction("reject", "reject")}
+                disabled={loadingAction === "reject"}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 transition-colors shadow-sm"
+              >
+                {loadingAction === "reject" && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                Reject
+              </button>
+            </>
           )}
 
           {!isSent && isApproved && !isConverted && canEdit && (

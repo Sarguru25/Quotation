@@ -135,3 +135,32 @@ export async function downloadQuotationPDF(id) {
   });
   return response;
 }
+
+/**
+ * Mark a quotation as draft
+ */
+export async function markQuotationAsDraft(id) {
+  const data = await zohoFetch(`/estimates/${id}/status/draft`, {
+    method: "POST",
+  });
+  return data;
+}
+
+/**
+ * Reject a quotation
+ */
+export async function rejectQuotation(id, reason) {
+  try {
+    const data = await zohoFetch(`/estimates/${id}/reject`, {
+      method: "POST",
+      params: { reason: reason || "Rejected by reviewer" },
+      body: { reason: reason || "Rejected by reviewer", description: reason || "Rejected by reviewer" }
+    });
+    return data;
+  } catch (err) {
+    // Fallback to declined status if approval reject endpoint fails
+    return await zohoFetch(`/estimates/${id}/status/declined`, {
+      method: "POST",
+    });
+  }
+}

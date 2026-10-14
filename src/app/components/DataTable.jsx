@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, ArrowUpDown, ChevronUp, ChevronDown } from "lucide-react";
 import { memo } from "react";
 
 function DataTable({
@@ -8,6 +8,9 @@ function DataTable({
   page,
   limit,
   total,
+  sortField,
+  sortOrder,
+  onSort,
   onPageChange,
   onLimitChange,
   onSearch,
@@ -52,14 +55,36 @@ function DataTable({
         <table className="min-w-full text-sm">
           <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-100">
             <tr>
-              {columns.map((col, i) => (
-                <th
-                  key={i}
-                  className={`px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider ${col.className || ''}`}
-                >
-                  {col.label}
-                </th>
-              ))}
+              {columns.map((col, i) => {
+                const isSortable = !!col.sortKey;
+                const isCurrentSort = sortField === col.sortKey;
+                return (
+                  <th
+                    key={i}
+                    onClick={() => isSortable && onSort && onSort(col.sortKey)}
+                    className={`px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wider ${
+                      isSortable ? "cursor-pointer select-none group hover:bg-slate-100/70 transition-colors" : ""
+                    } ${isCurrentSort ? "text-indigo-600 font-bold" : "text-slate-500"} ${col.className || ""}`}
+                  >
+                    <div className={`flex items-center gap-1.5 ${col.className?.includes("text-right") ? "justify-end" : col.className?.includes("text-center") ? "justify-center" : ""}`}>
+                      <span>{col.label}</span>
+                      {isSortable && (
+                        <span className="inline-flex items-center">
+                          {isCurrentSort ? (
+                            sortOrder === "asc" ? (
+                              <ChevronUp size={14} className="text-indigo-600" />
+                            ) : (
+                              <ChevronDown size={14} className="text-indigo-600" />
+                            )
+                          ) : (
+                            <ArrowUpDown size={13} className="text-slate-400 opacity-40 group-hover:opacity-100 transition-opacity" />
+                          )}
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50 relative">

@@ -12,6 +12,7 @@ const QuotationLineItemSchema = new mongoose.Schema({
 const QuotationSchema = new mongoose.Schema({
   zoho_estimate_id: { type: String, unique: true, index: true },
   estimate_number: { type: String },
+  reference_number: { type: String },
   customer_id: { type: String },
   customer_name: { type: String },
   date: { type: Date },
@@ -26,12 +27,16 @@ const QuotationSchema = new mongoose.Schema({
   notes: { type: String },
   terms: { type: String },
   line_items: [QuotationLineItemSchema],
+  rejectedAt: { type: Date },
+  rejectedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  rejectionReason: { type: String },
   syncedAt: { type: Date, default: Date.now },
   last_modified_time: { type: Date, index: true },
   rawZohoData: { type: mongoose.Schema.Types.Mixed }
 }, { timestamps: true });
 
 QuotationSchema.index({ estimate_number: 1 });
+QuotationSchema.index({ reference_number: 1 });
 QuotationSchema.index({ customer_name: 1 });
 QuotationSchema.index({ status: 1 });
 QuotationSchema.index({ date: -1 });

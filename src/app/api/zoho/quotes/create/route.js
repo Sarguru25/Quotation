@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/rbac/auth";
 import { PERMISSIONS } from "@/lib/rbac/permissions";
-import { createQuotation } from "@/lib/zoho/quotations";
+import { createQuotation, submitQuotationForApproval } from "@/lib/zoho/quotations";
 import { syncQuotations } from "@/lib/zoho-sync/syncQuotations";
+import dbConnect from "@/lib/db";
+import Quotation from "@/models/Quotation";
 
 export async function POST(req) {
   try {
@@ -67,24 +69,70 @@ export async function POST(req) {
 
     // 3. Service Layer call
     const data = await createQuotation(quotePayload);
+    let finalEstimate = data?.estimate;
 
-    if (body.isSubmit && data?.estimate?.estimate_id) {
+    if (body.isSubmit && finalEstimate?.estimate_id) {
       try {
-        const { submitQuotationForApproval, markQuotationAsSent } = require("@/lib/zoho/quotations");
-        try {
-          await submitQuotationForApproval(data.estimate.estimate_id);
-        } catch(e) {
-          await markQuotationAsSent(data.estimate.estimate_id);
+        const submitRes = await submitQuotationForApproval(finalEstimate.estimate_id);
+        if (submitRes?.estimate) {
+          finalEstimate = submitRes.estimate;
         }
       } catch (err) {
-        console.error("Failed to submit quotation:", err);
+        console.warn("[API] Zoho submitQuotationForApproval notice:", err.message || err);
+      }
+    }
+
+    // Persist immediately to MongoDB with the authoritative status
+    if (finalEstimate?.estimate_id) {
+      try {
+        await dbConnect();
+        const finalStatus = finalEstimate.status
+          ? finalEstimate.status.toLowerCase()
+          : (body.isSubmit ? "pending_approval" : "draft");
+
+        await Quotation.findOneAndUpdate(
+          { zoho_estimate_id: finalEstimate.estimate_id },
+          {
+            $set: {
+              estimate_number: finalEstimate.estimate_number,
+              reference_number: finalEstimate.reference_number || body.reference_number || "",
+              customer_id: finalEstimate.customer_id,
+              customer_name: finalEstimate.customer_name,
+              date: finalEstimate.date ? new Date(finalEstimate.date) : null,
+              expiry_date: finalEstimate.expiry_date ? new Date(finalEstimate.expiry_date) : null,
+              status: finalStatus,
+              currency_code: finalEstimate.currency_code,
+              sub_total: finalEstimate.sub_total,
+              tax_total: finalEstimate.tax_total,
+              total: finalEstimate.total,
+              salesperson_name: finalEstimate.salesperson_name,
+              subject: finalEstimate.subject_content || finalEstimate.subject,
+              notes: finalEstimate.notes,
+              terms: finalEstimate.terms,
+              line_items: finalEstimate.line_items ? finalEstimate.line_items.map(item => ({
+                item_id: item.item_id,
+                name: item.name,
+                quantity: item.quantity,
+                rate: item.rate,
+                tax_percentage: item.tax_percentage,
+                item_total: item.item_total
+              })) : [],
+              syncedAt: new Date(),
+              last_modified_time: finalEstimate.last_modified_time ? new Date(finalEstimate.last_modified_time) : new Date(),
+              rawZohoData: finalEstimate
+            }
+          },
+          { upsert: true }
+        );
+      } catch (dbErr) {
+        console.error("[API] Error caching created quotation to DB:", dbErr);
       }
     }
 
     // 4. Return
     const response = NextResponse.json({
       success: true,
-      data,
+      data: { ...data, estimate: finalEstimate },
     });
     
     syncQuotations('incremental').catch(e => console.error("Auto-sync error:", e));

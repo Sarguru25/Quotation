@@ -126,15 +126,62 @@ export default function QuotationsPage() {
 
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState(null);
+  const [editingQuoteStatus, setEditingQuoteStatus] = useState(null);
+  const [savingAction, setSavingAction] = useState(null); // 'draft' | 'submit' | null
+  const saving = Boolean(savingAction);
+  const [toastMsg, setToastMsg] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+
   function showToast(message, type = "success") {
-    if (type === "error") {
-      toast.error(message);
-    } else {
-      toast.success(message);
-    }
+    setToastMsg({ message, type });
+    setTimeout(() => setToastMsg(null), 3500);
   }
+
+  const handleFullFetch = async () => {
+    try {
+      setIsSyncing(true);
+      showToast("Fetching all quotations from Zoho Books...", "info");
+      const res = await fetch("/api/sync/quotations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "full" })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data.error || "Failed to fetch from Zoho Books", "error");
+      } else {
+        showToast(`Synced ${data.processed || 0} quotations from Zoho Books!`, "success");
+        await fetchQuotes();
+      }
+    } catch (e) {
+      showToast("Error connecting to Zoho Books", "error");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      setIsSyncing(true);
+      showToast("Syncing latest changes from Zoho Books...", "info");
+      const res = await fetch("/api/sync/quotations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "incremental" })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data.error || "Failed to sync", "error");
+      } else {
+        showToast("Synchronized successfully!", "success");
+        await fetchQuotes();
+      }
+    } catch (e) {
+      showToast("Sync error", "error");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -144,6 +191,8 @@ export default function QuotationsPage() {
   const limit = Number(searchParams.get("limit")) || 20;
   const search = searchParams.get("search") || "";
   const statusFilter = searchParams.get("status") || "all";
+  const sortField = searchParams.get("sortField") || "estimate_number";
+  const sortOrder = searchParams.get("sortOrder") || "desc";
 
   const [searchInput, setSearchInput] = useState(search);
 
@@ -169,10 +218,18 @@ export default function QuotationsPage() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
+  const handleSort = (field) => {
+    if (sortField === field) {
+      updateUrlParams({ sortOrder: sortOrder === "asc" ? "desc" : "asc", page: 1 });
+    } else {
+      updateUrlParams({ sortField: field, sortOrder: "desc", page: 1 });
+    }
+  };
+
   const { data: queryData, isLoading: loading, refetch: fetchQuotes } = useQuery({
-    queryKey: ['quotations', page, limit, search, statusFilter],
+    queryKey: ['quotations', page, limit, search, statusFilter, sortField, sortOrder],
     queryFn: async () => {
-      const res = await fetch(`/api/zoho/quotes?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&status=${statusFilter}`);
+      const res = await fetch(`/api/zoho/quotes?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&status=${statusFilter}&sortField=${sortField}&sortOrder=${sortOrder}`);
       if (!res.ok) throw new Error("Failed to fetch");
       return res.json();
     },
@@ -254,10 +311,7 @@ export default function QuotationsPage() {
 
   const [form, setForm] = useState(initialFormState);
 
-  function showToast(message, type = "success") {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
-  }
+
 
 
 
@@ -377,8 +431,20 @@ export default function QuotationsPage() {
 
   async function handleSaveQuotation(isSubmit = false) {
     if (!form.customer_id) { showToast("Please select a customer", "error"); return; }
+
+    // If updating an approved quotation, ask for explicit confirmation before submitting for approval
+    if (editingId && isSubmit) {
+      const isApproved = editingQuoteStatus === "approved" || editingQuoteStatus === "accepted";
+      const confirmMessage = isApproved
+        ? "Are you sure you want to update and submit this approved quotation for approval? Its status will change to 'Pending Approval' and it will require approver re-approval."
+        : "Are you sure you want to submit this quotation for approval?";
+      if (!window.confirm(confirmMessage)) {
+        return;
+      }
+    }
+
     try {
-      setSaving(true);
+      setSavingAction(isSubmit ? "submit" : "draft");
       const url = editingId ? `/api/zoho/quotes/${editingId}` : "/api/zoho/quotes/create";
       const method = editingId ? "PUT" : "POST";
       const res = await fetch(url, {
@@ -391,16 +457,27 @@ export default function QuotationsPage() {
         showToast(data.error || "Failed to save", "error");
         return;
       }
-      showToast(`Quotation ${editingId ? "updated" : "created"} successfully!`);
+
+      if (editingId) {
+        if (isSubmit) {
+          showToast("Quotation updated and submitted for approval! Status is now Pending Approval.");
+        } else {
+          showToast("Quotation saved as Draft. Status changed to Draft.");
+        }
+      } else {
+        showToast(isSubmit ? "Quotation submitted for approval!" : "Quotation saved as draft!");
+      }
+
       setOpen(false);
       setEditingId(null);
+      setEditingQuoteStatus(null);
       setForm(initialFormState);
       fetchQuotes();
     } catch (err) {
       console.error(err);
       showToast("Something went wrong", "error");
     } finally {
-      setSaving(false);
+      setSavingAction(null);
     }
   }
 
@@ -418,6 +495,8 @@ export default function QuotationsPage() {
   async function openEditModal(quote) {
     const id = quote.zoho_estimate_id || quote.estimate_id || quote._id;
     setEditingId(id);
+    const initialStatus = (quote.status || "").toLowerCase();
+    setEditingQuoteStatus(initialStatus);
     try {
       const res = await fetch(`/api/zoho/quotes/${id}`);
       const fullQuote = await res.json();
@@ -425,10 +504,13 @@ export default function QuotationsPage() {
       if (!res.ok || fullQuote.error) {
         showToast(fullQuote.error || "Failed to fetch existing data from Zoho.", "error");
         setOpen(false);
+        setEditingId(null);
+        setEditingQuoteStatus(null);
         return;
       }
 
       if (fullQuote) {
+        setEditingQuoteStatus((fullQuote.status || initialStatus || "").toLowerCase());
         setForm({
           customer_id: fullQuote.customer_id || "",
           customer_name: fullQuote.customer_name || "",
@@ -506,7 +588,7 @@ export default function QuotationsPage() {
         <div className="flex gap-2">
           {canCreate && (
             <button
-              onClick={() => { setEditingId(null); setForm(initialFormState); setOpen(true); }}
+              onClick={() => { setEditingId(null); setEditingQuoteStatus(null); setForm(initialFormState); setOpen(true); }}
               className="btn-press flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm shadow-indigo-200 transition-colors"
             >
               <Plus size={16} />
@@ -514,18 +596,20 @@ export default function QuotationsPage() {
             </button>
           )}
           <button
-            onClick={() => fetchQuotes(true)}
-            className="btn-press flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+            onClick={handleFullFetch}
+            disabled={isSyncing}
+            className="btn-press flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
             title="Fetch all quotations from Zoho Books"
           >
-            <DownloadCloud size={16} />
-            Full Fetch
+            <DownloadCloud size={16} className={isSyncing ? "animate-bounce" : ""} />
+            {isSyncing ? "Syncing..." : "Full Fetch"}
           </button>
           <button
-            onClick={() => fetchQuotes(false)}
-            className="btn-press flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+            onClick={handleRefresh}
+            disabled={isSyncing}
+            className="btn-press flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
           >
-            <RefreshCcw size={16} />
+            <RefreshCcw size={16} className={isSyncing ? "animate-spin" : ""} />
             Refresh
           </button>
         </div>
@@ -551,14 +635,17 @@ export default function QuotationsPage() {
       <div className="h-[600px]">
         <DataTable
           columns={[
-            { label: "Date" },
-            { label: "Quote No." },
-            { label: "Ref No." },
-            { label: "Customer" },
-            { label: "Status" },
-            { label: "Amount", className: "text-right" },
+            { label: "Date", sortKey: "date" },
+            { label: "Quote No.", sortKey: "estimate_number" },
+            { label: "Ref No.", sortKey: "reference_number" },
+            { label: "Customer", sortKey: "customer_name" },
+            { label: "Status", sortKey: "status" },
+            { label: "Amount", sortKey: "total", className: "text-right" },
             { label: "Actions", className: "text-center" }
           ]}
+          sortField={sortField}
+          sortOrder={sortOrder}
+          onSort={handleSort}
           data={quotes}
           loading={loading}
           page={page}
@@ -572,6 +659,7 @@ export default function QuotationsPage() {
           emptyStateSubtext="Try adjusting your search or create a new quotation"
           renderRow={(q) => {
             const id = q.zoho_estimate_id || q.estimate_id || q._id;
+            const rowStatus = (q.status || q.rawZohoData?.status || "draft").toLowerCase();
             return (
               <tr key={id} className="table-row-hover hover:bg-slate-50/70 group">
                 <td className="px-5 py-4 text-slate-500 text-xs">{formatDate(q.date)}</td>
@@ -585,13 +673,13 @@ export default function QuotationsPage() {
                     <ChevronRight size={13} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                   </Link>
                 </td>
-                <td className="px-5 py-4 text-slate-600">{q.reference_number || "—"}</td>
+                <td className="px-5 py-4 text-slate-600">{q.reference_number || q.rawZohoData?.reference_number || "—"}</td>
                 <td className="px-5 py-4">
                   <div className="font-medium text-slate-800">{q.customer_name}</div>
                 </td>
                 <td className="px-5 py-4">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${STATUS_STYLES[q.status] || STATUS_STYLES.draft}`}>
-                    {q.status?.replace('_', ' ')}
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${STATUS_STYLES[rowStatus] || STATUS_STYLES.draft}`}>
+                    {rowStatus.replace('_', ' ')}
                   </span>
                 </td>
                 <td className="px-5 py-4 text-right font-semibold text-slate-800">
@@ -636,7 +724,11 @@ export default function QuotationsPage() {
                 </h2>
               </div>
               <button
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  setOpen(false);
+                  setEditingId(null);
+                  setEditingQuoteStatus(null);
+                }}
                 className="p-1.5 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
               >
                 <X size={24} />
@@ -644,6 +736,21 @@ export default function QuotationsPage() {
             </div>
 
             <div className="max-w-[1200px] mx-auto py-8 px-6 pb-40">
+              {/* {editingId && (editingQuoteStatus === "approved" || editingQuoteStatus === "accepted") && (
+                <div className="mb-8 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-3 shadow-sm">
+                  <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                  <div className="text-sm">
+                    <div className="font-semibold text-amber-800">Notice: Editing an Approved Quotation</div>
+                    <div className="mt-1 text-amber-700 leading-relaxed">
+                      This quotation is currently <strong>Approved</strong>. Any changes will require re-approval:
+                      <ul className="list-disc list-inside mt-1.5 space-y-1 text-xs text-amber-800">
+                        <li><strong>Save as Draft:</strong> Saves all edits and changes status to <em>Draft</em>. The quotation cannot be treated as approved until re-submitted and approved.</li>
+                        <li><strong>Update and Submit for Approval:</strong> Saves all edits and changes status to <em>Pending Approval</em>, notifying approvers for review.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )} */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-y-6 gap-x-8 mb-12">
                 <div className="md:col-span-3 flex items-center md:justify-end">
                   <label className="text-sm font-medium text-red-500">Customer Name*</label>
@@ -957,14 +1064,37 @@ export default function QuotationsPage() {
             </div>
 
             <div className="fixed bottom-0 left-0 md:left-64 right-0 bg-white border-t border-gray-200 px-4 md:px-8 py-4 flex justify-between items-center z-[60] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-              <div className="flex gap-3">
-                <button onClick={() => handleSaveQuotation(false)} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm font-medium transition-colors shadow-sm">
-                  {saving && !form.isSubmit ? "Saving..." : "Save as Draft"}
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleSaveQuotation(false)}
+                  disabled={saving}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm font-medium transition-colors shadow-sm disabled:opacity-50"
+                >
+                  {savingAction === "draft" ? "Saving Draft..." : "Save as Draft"}
                 </button>
-                <button onClick={() => handleSaveQuotation(true)} disabled={saving} className="bg-gray-100 border border-gray-300 text-gray-800 hover:bg-gray-200 px-5 py-2 rounded-md text-sm font-medium transition-colors">
-                  {saving && form.isSubmit ? "Saving..." : editingId ? "Update & Submit for Approval" : "Save and Submit for Approval"}
+                <button
+                  type="button"
+                  onClick={() => handleSaveQuotation(true)}
+                  disabled={saving}
+                  className="bg-gray-100 border border-gray-300 text-gray-800 hover:bg-gray-200 px-5 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50"
+                >
+                  {savingAction === "submit"
+                    ? "Submitting..."
+                    : editingId
+                    ? "Update and Submit for Approval"
+                    : "Save and Submit for Approval"}
                 </button>
-                <button onClick={() => setOpen(false)} className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-5 py-2 rounded-md text-sm font-medium transition-colors">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    setEditingId(null);
+                    setEditingQuoteStatus(null);
+                  }}
+                  disabled={saving}
+                  className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-5 py-2 rounded-md text-sm font-medium transition-colors"
+                >
                   Cancel
                 </button>
               </div>

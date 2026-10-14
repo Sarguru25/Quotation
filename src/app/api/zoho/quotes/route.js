@@ -9,12 +9,15 @@ export async function GET(request) {
     const page = parseInt(searchParams.get('page')) || 1;
     const limit = parseInt(searchParams.get('limit')) || 20;
     const search = searchParams.get('search') || '';
+    const status = searchParams.get('status') || '';
+    const sortField = searchParams.get('sortField') || 'estimate_number';
+    const sortOrder = searchParams.get('sortOrder') || 'desc';
 
     // 1. Authorization
     await requirePermission(PERMISSIONS.QUOTATION.VIEW);
 
     // 2. Fetch via Service Layer
-    const result = await getQuotationsFromDB({ page, limit, search });
+    const result = await getQuotationsFromDB({ page, limit, search, status, sortField, sortOrder });
 
     // 3. Return response
     return NextResponse.json(result);

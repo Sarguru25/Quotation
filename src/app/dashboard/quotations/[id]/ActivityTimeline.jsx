@@ -64,6 +64,45 @@ export default function ActivityTimeline({ quote, localQuote, activityLogs }) {
     });
   }
 
+  // Include audit trail from database ActivityLog
+  activityLogs?.forEach((log, idx) => {
+    // Avoid duplicating SEND_EMAIL or CONVERT_SO already handled above
+    if (log.action === 'SEND_EMAIL' || log.action === 'CONVERT_SO') return;
+
+    let icon = "check";
+    let color = "bg-blue-500";
+    let title = log.action.replace(/_/g, " ");
+
+    if (log.action === "SUBMIT_FOR_APPROVAL") {
+      icon = "mail";
+      color = "bg-amber-500";
+      title = "Submitted for Approval";
+    } else if (log.action === "SAVE_AS_DRAFT") {
+      icon = "file";
+      color = "bg-gray-500";
+      title = "Saved as Draft";
+    } else if (log.action === "APPROVE_QUOTATION") {
+      icon = "check";
+      color = "bg-emerald-500";
+      title = "Quotation Approved";
+    } else if (log.action === "REJECT_QUOTATION") {
+      icon = "x";
+      color = "bg-red-500";
+      title = "Quotation Rejected";
+    }
+
+    activities.push({
+      id: `log-${log._id || idx}`,
+      title,
+      description: log.description || `Action performed by ${log.user?.name || "User"}`,
+      date: log.createdAt,
+      icon,
+      color,
+    });
+  });
+
+  activities.sort((a, b) => new Date(a.date) - new Date(b.date));
+
   const formatDate = (dateString) => {
     if (!dateString) return "Unknown date";
     const date = new Date(dateString);

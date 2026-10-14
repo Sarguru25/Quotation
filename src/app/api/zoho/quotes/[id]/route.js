@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
 import { requirePermission } from "@/lib/rbac/auth";
 import { PERMISSIONS } from "@/lib/rbac/permissions";
-import { updateQuotation, deleteQuotation, getQuotationById, submitQuotationForApproval, markQuotationAsSent } from "@/lib/zoho/quotations";
+import { updateQuotation, deleteQuotation, getQuotationById, submitQuotationForApproval, markQuotationAsDraft } from "@/lib/zoho/quotations";
 import { syncQuotations } from "@/lib/zoho-sync/syncQuotations";
 import dbConnect from "@/lib/db";
 import Quotation from "@/models/Quotation";
+import ActivityLog from "@/models/ActivityLog";
 
 export async function GET(req, context) {
   try {
@@ -28,8 +31,17 @@ export async function GET(req, context) {
 export async function PUT(req, context) {
   try {
     await requirePermission(PERMISSIONS.QUOTATION.EDIT);
+    const session = await getServerSession(authOptions);
     const { id } = await context.params;
     const body = await req.json();
+
+    await dbConnect();
+    const existingQuote = await Quotation.findOne({
+      $or: [
+        { zoho_estimate_id: id },
+        ...(id.match(/^[0-9a-fA-F]{24}$/) ? [{ _id: id }] : [])
+      ]
+    }).lean();
 
     const line_items = body.line_items.map((item) => {
       const payloadItem = {
@@ -86,21 +98,69 @@ export async function PUT(req, context) {
 
     const data = await updateQuotation(id, quotePayload);
 
-    // Determine target status based on user action:
-    // If Save and Submit (isSubmit === true) -> status is 'pending_approval'
-    // If Save as Draft (isSubmit === false) -> status is 'draft'
-    const newStatus = body.isSubmit ? 'pending_approval' : 'draft';
+    let finalStatus = 'draft';
 
     if (body.isSubmit) {
+      // 1. Employee selected "Update and Submit for Approval"
       try {
-        await submitQuotationForApproval(id);
+        const submitRes = await submitQuotationForApproval(id);
+        if (submitRes?.estimate?.status) {
+          finalStatus = submitRes.estimate.status.toLowerCase();
+        } else {
+          finalStatus = 'pending_approval';
+        }
       } catch (err) {
         console.warn("[API] Zoho submitQuotationForApproval notice:", err.message || err);
+        finalStatus = 'pending_approval';
+      }
+
+      // Log audit trail for submit
+      try {
+        await ActivityLog.create({
+          user: session?.user?.id,
+          action: 'SUBMIT_FOR_APPROVAL',
+          module: 'Quotation',
+          description: `Quotation ${existingQuote?.estimate_number || id} was updated and submitted for approval by ${session?.user?.name || 'User'}.`,
+          metadata: {
+            quotationId: existingQuote?.zoho_estimate_id || id,
+            estimate_number: existingQuote?.estimate_number,
+            previousStatus: existingQuote?.status,
+            newStatus: 'pending_approval'
+          }
+        });
+      } catch (logErr) {
+        console.error("ActivityLog error:", logErr);
+      }
+    } else {
+      // 2. Employee selected "Save as Draft"
+      try {
+        await markQuotationAsDraft(id);
+        finalStatus = 'draft';
+      } catch (err) {
+        console.warn("[API] Zoho markQuotationAsDraft notice:", err.message || err);
+        finalStatus = 'draft';
+      }
+
+      // Log audit trail for saving as draft
+      try {
+        await ActivityLog.create({
+          user: session?.user?.id,
+          action: 'SAVE_AS_DRAFT',
+          module: 'Quotation',
+          description: `Quotation ${existingQuote?.estimate_number || id} was edited and saved as Draft by ${session?.user?.name || 'User'}. Previous approval was reset.`,
+          metadata: {
+            quotationId: existingQuote?.zoho_estimate_id || id,
+            estimate_number: existingQuote?.estimate_number,
+            previousStatus: existingQuote?.status,
+            newStatus: 'draft'
+          }
+        });
+      } catch (logErr) {
+        console.error("ActivityLog error:", logErr);
       }
     }
 
-    // Persist new status to MongoDB
-    await dbConnect();
+    // Persist new status, reference number, and audit to MongoDB
     await Quotation.findOneAndUpdate(
       {
         $or: [
@@ -110,7 +170,11 @@ export async function PUT(req, context) {
       },
       {
         $set: {
-          status: newStatus,
+          reference_number: body.reference_number || data?.estimate?.reference_number || '',
+          status: finalStatus,
+          rejectedAt: null,
+          rejectedBy: null,
+          rejectionReason: null,
           last_modified_time: new Date()
         }
       }
@@ -119,7 +183,7 @@ export async function PUT(req, context) {
     const response = NextResponse.json({
       success: true,
       data,
-      status: newStatus,
+      status: finalStatus,
     });
     
     syncQuotations('incremental').catch(e => console.error("Auto-sync error:", e));
